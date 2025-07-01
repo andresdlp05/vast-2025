@@ -172,80 +172,82 @@ function init_nadia_analysis() {
             return;
         }
         
-        // Check if container is visible
-        const containerNode = container.node();
-        if (!containerNode || containerNode.offsetWidth === 0) {
-            console.warn("Hourly chart container is not visible, skipping chart creation");
-            container.html('<p class="text-gray-500">Chart will load when tab is visible</p>');
-            return;
-        }
-        
-        const width = Math.max(300, containerNode.offsetWidth - 20);
-        const height = 200;
-        const margin = { top: 20, right: 20, bottom: 40, left: 40 };
-        
-        try {
-            const svg = container.append("svg")
-                .attr("width", width)
-                .attr("height", height);
+        // Force a short delay to ensure container is rendered
+        setTimeout(() => {
+            const containerNode = container.node();
+            if (!containerNode || containerNode.offsetWidth === 0) {
+                console.warn("Hourly chart container still not visible, retrying...");
+                setTimeout(() => createHourlyChart(hourlyData), 200);
+                return;
+            }
             
-            // Convert hourly data to array format
-            const data = hourlyData.map((count, hour) => ({ hour, count }));
+            const width = Math.max(300, containerNode.offsetWidth - 20);
+            const height = 200;
+            const margin = { top: 20, right: 20, bottom: 40, left: 40 };
             
-            // Scales
-            const xScale = d3.scaleBand()
-                .domain(d3.range(24))
-                .range([margin.left, width - margin.right])
-                .padding(0.1);
-            
-            const yScale = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.count) || 1])
-                .nice()
-                .range([height - margin.bottom, margin.top]);
-            
-            // Bars
-            svg.selectAll("rect")
-                .data(data)
-                .join("rect")
-                .attr("x", d => xScale(d.hour))
-                .attr("y", d => yScale(d.count))
-                .attr("width", xScale.bandwidth())
-                .attr("height", d => yScale(0) - yScale(d.count))
-                .attr("fill", d => {
-                    // Color code suspicious hours
-                    if (d.hour >= 23 || d.hour <= 4) return "#ef4444"; // Late night - red
-                    if (d.hour >= 5 && d.hour <= 7) return "#f59e0b"; // Early morning - yellow
-                    return "#3b82f6"; // Normal hours - blue
-                })
-                .attr("rx", 2);
-            
-            // Add tooltips
-            svg.selectAll("rect")
-                .append("title")
-                .text(d => `${d.count} communications at ${d.hour}:00`);
-            
-            // X-axis
-            svg.append("g")
-                .attr("transform", `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(xScale).tickValues([0, 6, 12, 18]).tickFormat(d => `${d}:00`));
-            
-            // Y-axis
-            svg.append("g")
-                .attr("transform", `translate(${margin.left},0)`)
-                .call(d3.axisLeft(yScale));
-            
-            // Labels
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", height - 5)
-                .attr("text-anchor", "middle")
-                .style("font-size", "12px")
-                .text("Hour of Day");
+            try {
+                const svg = container.append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
                 
-        } catch (error) {
-            console.error("Error creating hourly chart:", error);
-            container.html('<p class="text-red-500">Error creating chart</p>');
-        }
+                // Convert hourly data to array format
+                const data = hourlyData.map((count, hour) => ({ hour, count }));
+                
+                // Scales
+                const xScale = d3.scaleBand()
+                    .domain(d3.range(24))
+                    .range([margin.left, width - margin.right])
+                    .padding(0.1);
+                
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.count) || 1])
+                    .nice()
+                    .range([height - margin.bottom, margin.top]);
+                
+                // Bars
+                svg.selectAll("rect")
+                    .data(data)
+                    .join("rect")
+                    .attr("x", d => xScale(d.hour))
+                    .attr("y", d => yScale(d.count))
+                    .attr("width", xScale.bandwidth())
+                    .attr("height", d => yScale(0) - yScale(d.count))
+                    .attr("fill", d => {
+                        // Color code suspicious hours
+                        if (d.hour >= 23 || d.hour <= 4) return "#ef4444"; // Late night - red
+                        if (d.hour >= 5 && d.hour <= 7) return "#f59e0b"; // Early morning - yellow
+                        return "#3b82f6"; // Normal hours - blue
+                    })
+                    .attr("rx", 2);
+                
+                // Add tooltips
+                svg.selectAll("rect")
+                    .append("title")
+                    .text(d => `${d.count} communications at ${d.hour}:00`);
+                
+                // X-axis
+                svg.append("g")
+                    .attr("transform", `translate(0,${height - margin.bottom})`)
+                    .call(d3.axisBottom(xScale).tickValues([0, 6, 12, 18]).tickFormat(d => `${d}:00`));
+                
+                // Y-axis
+                svg.append("g")
+                    .attr("transform", `translate(${margin.left},0)`)
+                    .call(d3.axisLeft(yScale));
+                
+                // Labels
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height - 5)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "12px")
+                    .text("Hour of Day");
+                    
+            } catch (error) {
+                console.error("Error creating hourly chart:", error);
+                container.html('<p class="text-red-500">Error creating chart</p>');
+            }
+        }, 50);
     }
     
     function createTimelineEvents(timelineData) {
@@ -333,113 +335,115 @@ function init_nadia_analysis() {
             return;
         }
         
-        // Check if container is visible
-        const containerNode = container.node();
-        if (!containerNode || containerNode.offsetWidth === 0) {
-            console.warn("Network graph container is not visible, skipping graph creation");
-            container.html('<p class="text-gray-500">Graph will load when tab is visible</p>');
-            return;
-        }
-        
-        const width = Math.max(400, containerNode.offsetWidth - 20);
-        const height = 350;
-        
-        try {
-            const svg = container.append("svg")
-                .attr("width", "100%")
-                .attr("height", "100%")
-                .attr("viewBox", [0, 0, width, height]);
+        // Force a delay to ensure container is rendered
+        setTimeout(() => {
+            const containerNode = container.node();
+            if (!containerNode || containerNode.offsetWidth === 0) {
+                console.warn("Network graph container still not visible, retrying...");
+                setTimeout(() => createNetworkGraph(networkData), 200);
+                return;
+            }
             
-            // Make a copy of the data to avoid mutating the original
-            const nodes = networkData.nodes.map(d => ({...d}));
-            const links = networkData.links.map(d => ({...d}));
+            const width = Math.max(400, containerNode.offsetWidth - 20);
+            const height = 350;
             
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(80))
-                .force("charge", d3.forceManyBody().strength(-200))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(20));
-            
-            // Links
-            const link = svg.append("g")
-                .selectAll("line")
-                .data(links)
-                .join("line")
-                .attr("stroke", "#999")
-                .attr("stroke-opacity", 0.6)
-                .attr("stroke-width", d => Math.sqrt(d.weight || 1) * 2);
-            
-            // Nodes
-            const node = svg.append("g")
-                .selectAll("circle")
-                .data(nodes)
-                .join("circle")
-                .attr("r", d => d.category === "central" ? 12 : Math.max(4, Math.sqrt((d.communication_count || 1) * 2)))
-                .attr("fill", d => {
-                    if (d.category === "central") return "#dc2626";
-                    if (d.type === "Person") return "#3b82f6";
-                    if (d.type === "Organization") return "#059669";
-                    if (d.type === "Vessel") return "#d97706";
-                    return "#6b7280";
-                })
-                .attr("stroke", "#fff")
-                .attr("stroke-width", 2)
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
-            
-            // Labels
-            const label = svg.append("g")
-                .selectAll("text")
-                .data(nodes)
-                .join("text")
-                .text(d => d.name || d.id)
-                .attr("font-size", d => d.category === "central" ? "12px" : "10px")
-                .attr("dx", 15)
-                .attr("dy", 4)
-                .attr("fill", "#333");
-            
-            // Add tooltips
-            node.append("title")
-                .text(d => `${d.name || d.id} (${d.type || 'Unknown'})\n${d.communication_count || 0} communications`);
-            
-            simulation.on("tick", () => {
-                link
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
+            try {
+                const svg = container.append("svg")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", [0, 0, width, height]);
                 
-                node
-                    .attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
+                // Make a copy of the data to avoid mutating the original
+                const nodes = networkData.nodes.map(d => ({...d}));
+                const links = networkData.links.map(d => ({...d}));
                 
-                label
-                    .attr("x", d => d.x)
-                    .attr("y", d => d.y);
-            });
-            
-            function dragstarted(event) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                event.subject.fx = event.subject.x;
-                event.subject.fy = event.subject.y;
+                const simulation = d3.forceSimulation(nodes)
+                    .force("link", d3.forceLink(links).id(d => d.id).distance(80))
+                    .force("charge", d3.forceManyBody().strength(-200))
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .force("collision", d3.forceCollide().radius(20));
+                
+                // Links
+                const link = svg.append("g")
+                    .selectAll("line")
+                    .data(links)
+                    .join("line")
+                    .attr("stroke", "#999")
+                    .attr("stroke-opacity", 0.6)
+                    .attr("stroke-width", d => Math.sqrt(d.weight || 1) * 2);
+                
+                // Nodes
+                const node = svg.append("g")
+                    .selectAll("circle")
+                    .data(nodes)
+                    .join("circle")
+                    .attr("r", d => d.category === "central" ? 12 : Math.max(4, Math.sqrt((d.communication_count || 1) * 2)))
+                    .attr("fill", d => {
+                        if (d.category === "central") return "#dc2626";
+                        if (d.type === "Person") return "#3b82f6";
+                        if (d.type === "Organization") return "#059669";
+                        if (d.type === "Vessel") return "#d97706";
+                        return "#6b7280";
+                    })
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 2)
+                    .call(d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended));
+                
+                // Labels
+                const label = svg.append("g")
+                    .selectAll("text")
+                    .data(nodes)
+                    .join("text")
+                    .text(d => d.name || d.id)
+                    .attr("font-size", d => d.category === "central" ? "12px" : "10px")
+                    .attr("dx", 15)
+                    .attr("dy", 4)
+                    .attr("fill", "#333");
+                
+                // Add tooltips
+                node.append("title")
+                    .text(d => `${d.name || d.id} (${d.type || 'Unknown'})\n${d.communication_count || 0} communications`);
+                
+                simulation.on("tick", () => {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+                    
+                    node
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+                    
+                    label
+                        .attr("x", d => d.x)
+                        .attr("y", d => d.y);
+                });
+                
+                function dragstarted(event) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    event.subject.fx = event.subject.x;
+                    event.subject.fy = event.subject.y;
+                }
+                
+                function dragged(event) {
+                    event.subject.fx = event.x;
+                    event.subject.fy = event.y;
+                }
+                
+                function dragended(event) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    event.subject.fx = null;
+                    event.subject.fy = null;
+                }
+            } catch (error) {
+                console.error("Error creating network graph:", error);
+                container.html('<p class="text-red-500">Error creating network graph</p>');
             }
-            
-            function dragged(event) {
-                event.subject.fx = event.x;
-                event.subject.fy = event.y;
-            }
-            
-            function dragended(event) {
-                if (!event.active) simulation.alphaTarget(0);
-                event.subject.fx = null;
-                event.subject.fy = null;
-            }
-        } catch (error) {
-            console.error("Error creating network graph:", error);
-            container.html('<p class="text-red-500">Error creating network graph</p>');
-        }
+        }, 50);
     }
     
     function createContactsList(topContacts) {
@@ -505,62 +509,64 @@ function init_nadia_analysis() {
             return;
         }
         
-        // Check if container is visible
-        const containerNode = container.node();
-        if (!containerNode || containerNode.offsetWidth === 0) {
-            console.warn("Timing chart container is not visible, skipping chart creation");
-            container.html('<p class="text-gray-500">Chart will load when tab is visible</p>');
-            return;
-        }
-        
-        const width = Math.max(250, containerNode.offsetWidth - 20);
-        const height = 180;
-        const radius = Math.min(width, height) / 2 - 10;
-        
-        try {
-            const svg = container.append("svg")
-                .attr("width", width)
-                .attr("height", height);
+        // Force a delay to ensure container is rendered
+        setTimeout(() => {
+            const containerNode = container.node();
+            if (!containerNode || containerNode.offsetWidth === 0) {
+                console.warn("Timing chart container still not visible, retrying...");
+                setTimeout(() => createTimingChart(timeDistribution), 200);
+                return;
+            }
             
-            const g = svg.append("g")
-                .attr("transform", `translate(${width/2},${height/2})`);
+            const width = Math.max(250, containerNode.offsetWidth - 20);
+            const height = 180;
+            const radius = Math.min(width, height) / 2 - 10;
             
-            const color = d3.scaleOrdinal()
-                .domain(Object.keys(timeDistribution))
-                .range(["#ef4444", "#3b82f6", "#059669", "#dc2626"]);
-            
-            const pie = d3.pie()
-                .value(d => d.value);
-            
-            const arc = d3.arc()
-                .innerRadius(0)
-                .outerRadius(radius);
-            
-            const data = Object.entries(timeDistribution).map(([key, value]) => ({
-                key: key.replace('_', ' '),
-                value
-            }));
-            
-            const arcs = g.selectAll("arc")
-                .data(pie(data))
-                .enter()
-                .append("g");
-            
-            arcs.append("path")
-                .attr("d", arc)
-                .attr("fill", d => color(d.data.key))
-                .append("title")
-                .text(d => `${d.data.key}: ${d.data.value} communications`);
-            
-            arcs.append("text")
-                .attr("transform", d => `translate(${arc.centroid(d)})`)
-                .attr("text-anchor", "middle")
-                .attr("font-size", "10px")
-                .text(d => d.data.value > 0 ? d.data.value : "");
-        } catch (error) {
-            console.error("Error creating timing chart:", error);
-            container.html('<p class="text-red-500">Error creating timing chart</p>');
-        }
+            try {
+                const svg = container.append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+                
+                const g = svg.append("g")
+                    .attr("transform", `translate(${width/2},${height/2})`);
+                
+                const color = d3.scaleOrdinal()
+                    .domain(Object.keys(timeDistribution))
+                    .range(["#ef4444", "#3b82f6", "#059669", "#dc2626"]);
+                
+                const pie = d3.pie()
+                    .value(d => d.value);
+                
+                const arc = d3.arc()
+                    .innerRadius(0)
+                    .outerRadius(radius);
+                
+                const data = Object.entries(timeDistribution).map(([key, value]) => ({
+                    key: key.replace('_', ' '),
+                    value
+                }));
+                
+                const arcs = g.selectAll("arc")
+                    .data(pie(data))
+                    .enter()
+                    .append("g");
+                
+                arcs.append("path")
+                    .attr("d", arc)
+                    .attr("fill", d => color(d.data.key))
+                    .append("title")
+                    .text(d => `${d.data.key}: ${d.data.value} communications`);
+                
+                arcs.append("text")
+                    .attr("transform", d => `translate(${arc.centroid(d)})`)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "10px")
+                    .text(d => d.data.value > 0 ? d.data.value : "");
+            } catch (error) {
+                console.error("Error creating timing chart:", error);
+                container.html('<p class="text-red-500">Error creating timing chart</p>');
+            }
+        }, 50);
     }
     
     function createKeywordChart(keywordMentions) {
@@ -574,69 +580,71 @@ function init_nadia_analysis() {
             return;
         }
         
-        // Check if container is visible
-        const containerNode = container.node();
-        if (!containerNode || containerNode.offsetWidth === 0) {
-            console.warn("Keyword chart container is not visible, skipping chart creation");
-            container.html('<p class="text-gray-500">Chart will load when tab is visible</p>');
-            return;
-        }
-        
-        const width = Math.max(250, containerNode.offsetWidth - 20);
-        const height = 180;
-        const margin = { top: 20, right: 20, bottom: 40, left: 60 };
-        
-        try {
-            const svg = container.append("svg")
-                .attr("width", width)
-                .attr("height", height);
+        // Force a delay to ensure container is rendered
+        setTimeout(() => {
+            const containerNode = container.node();
+            if (!containerNode || containerNode.offsetWidth === 0) {
+                console.warn("Keyword chart container still not visible, retrying...");
+                setTimeout(() => createKeywordChart(keywordMentions), 200);
+                return;
+            }
             
-            const data = Object.entries(keywordMentions)
-                .slice(0, 8)
-                .map(([keyword, count]) => ({ keyword, count }));
+            const width = Math.max(250, containerNode.offsetWidth - 20);
+            const height = 180;
+            const margin = { top: 20, right: 20, bottom: 40, left: 60 };
             
-            const xScale = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.count) || 1])
-                .range([margin.left, width - margin.right]);
-            
-            const yScale = d3.scaleBand()
-                .domain(data.map(d => d.keyword))
-                .range([margin.top, height - margin.bottom])
-                .padding(0.1);
-            
-            svg.selectAll("rect")
-                .data(data)
-                .join("rect")
-                .attr("x", margin.left)
-                .attr("y", d => yScale(d.keyword))
-                .attr("width", d => xScale(d.count) - margin.left)
-                .attr("height", yScale.bandwidth())
-                .attr("fill", "#ef4444")
-                .attr("rx", 2);
-            
-            svg.selectAll("text")
-                .data(data)
-                .join("text")
-                .attr("x", margin.left - 5)
-                .attr("y", d => yScale(d.keyword) + yScale.bandwidth() / 2)
-                .attr("dy", "0.35em")
-                .attr("text-anchor", "end")
-                .attr("font-size", "10px")
-                .text(d => d.keyword);
-            
-            svg.selectAll(".count-label")
-                .data(data)
-                .join("text")
-                .attr("class", "count-label")
-                .attr("x", d => xScale(d.count) + 3)
-                .attr("y", d => yScale(d.keyword) + yScale.bandwidth() / 2)
-                .attr("dy", "0.35em")
-                .attr("font-size", "10px")
-                .text(d => d.count);
-        } catch (error) {
-            console.error("Error creating keyword chart:", error);
-            container.html('<p class="text-red-500">Error creating keyword chart</p>');
-        }
+            try {
+                const svg = container.append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+                
+                const data = Object.entries(keywordMentions)
+                    .slice(0, 8)
+                    .map(([keyword, count]) => ({ keyword, count }));
+                
+                const xScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.count) || 1])
+                    .range([margin.left, width - margin.right]);
+                
+                const yScale = d3.scaleBand()
+                    .domain(data.map(d => d.keyword))
+                    .range([margin.top, height - margin.bottom])
+                    .padding(0.1);
+                
+                svg.selectAll("rect")
+                    .data(data)
+                    .join("rect")
+                    .attr("x", margin.left)
+                    .attr("y", d => yScale(d.keyword))
+                    .attr("width", d => xScale(d.count) - margin.left)
+                    .attr("height", yScale.bandwidth())
+                    .attr("fill", "#ef4444")
+                    .attr("rx", 2);
+                
+                svg.selectAll("text")
+                    .data(data)
+                    .join("text")
+                    .attr("x", margin.left - 5)
+                    .attr("y", d => yScale(d.keyword) + yScale.bandwidth() / 2)
+                    .attr("dy", "0.35em")
+                    .attr("text-anchor", "end")
+                    .attr("font-size", "10px")
+                    .text(d => d.keyword);
+                
+                svg.selectAll(".count-label")
+                    .data(data)
+                    .join("text")
+                    .attr("class", "count-label")
+                    .attr("x", d => xScale(d.count) + 3)
+                    .attr("y", d => yScale(d.keyword) + yScale.bandwidth() / 2)
+                    .attr("dy", "0.35em")
+                    .attr("font-size", "10px")
+                    .text(d => d.count);
+            } catch (error) {
+                console.error("Error creating keyword chart:", error);
+                container.html('<p class="text-red-500">Error creating keyword chart</p>');
+            }
+        }, 50);
     }
     
     function createAuthorityAnalysis(authorityPatterns) {
