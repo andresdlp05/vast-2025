@@ -16,23 +16,63 @@ logging.getLogger("numba.core").setLevel(logging.WARNING)
 logging.getLogger("numba.typed").setLevel(logging.WARNING)
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_FILE = os.path.join(base_dir, "data", "MC3_graph.json")
-COMMUNICATION_FILE = os.path.join(base_dir, "data", "MC3_graph_communication.json")
-HETMAP_SIMILARITY_FILE = os.path.join(
-    base_dir, "data", "MC3_entity_similarity_matrix.csv"
-)
-app.config["DATA_FILE"] = DATA_FILE
-app.config["COMMUNICATION_FILE"] = COMMUNICATION_FILE
-app.config["HEATMAP_SIMILARITY_FILE"] = HETMAP_SIMILARITY_FILE
-app.config["RELATIONSHIPS_FILE"] = os.path.join(
-    base_dir, "data", "MC3_relationships.json"
-)
+
+# Data file configurations - AUTO-DETECT based on available files
+def setup_data_files():
+    data_dir = os.path.join(base_dir, "data")
+    config = {}
+    
+    if os.path.exists(data_dir):
+        for file in os.listdir(data_dir):
+            file_path = os.path.join(data_dir, file)
+            
+            # Map files based on naming patterns
+            if "communication" in file.lower() and file.endswith('.json'):
+                config["COMMUNICATION_FILE"] = file_path
+                logger.info(f"Found communication file: {file}")
+            elif "graph" in file.lower() and file.endswith('.json') and "communication" not in file.lower():
+                config["DATA_FILE"] = file_path
+                logger.info(f"Found main graph file: {file}")
+            elif "relationship" in file.lower() and file.endswith('.json'):
+                config["RELATIONSHIPS_FILE"] = file_path
+                logger.info(f"Found relationships file: {file}")
+            elif "similarity" in file.lower() and file.endswith('.csv'):
+                config["HEATMAP_SIMILARITY_FILE"] = file_path
+                logger.info(f"Found similarity matrix file: {file}")
+    
+    # Set fallbacks if specific files not found
+    if "COMMUNICATION_FILE" not in config:
+        # Try to find any JSON file that might contain communication data
+        potential_files = ["MC3_graph.json", "MC3_messages.json", "MC3_commun.json"]
+        for filename in potential_files:
+            filepath = os.path.join(data_dir, filename)
+            if os.path.exists(filepath):
+                config["COMMUNICATION_FILE"] = filepath
+                logger.warning(f"Using fallback communication file: {filename}")
+                break
+    
+    if "DATA_FILE" not in config and "COMMUNICATION_FILE" in config:
+        # Use the same file for both if we only have one
+        config["DATA_FILE"] = config["COMMUNICATION_FILE"]
+        logger.warning("Using communication file as main data file")
+    
+    return config
+
+# Setup data file configurations
+data_config = setup_data_files()
+for key, value in data_config.items():
+    app.config[key] = value
+    logger.info(f"Configured {key}: {os.path.basename(value)}")
+
+# Log configuration status
+logger.info(f"Data configuration complete. Files found: {list(data_config.keys())}")
 
 # AUTO-DETECT VISUALIZATIONS: Find all Python files in visualizations folder
 def detect_visualizations():
     """Automatically detect available visualizations"""
     viz_dir = os.path.join(os.path.dirname(__file__), "visualizations")
     if not os.path.exists(viz_dir):
+        logger.warning(f"Visualizations directory not found: {viz_dir}")
         return []
     
     visualizations = []
@@ -52,6 +92,10 @@ def detect_visualizations():
                 logger.info(f"Found complete visualization: {viz_name}")
             else:
                 logger.warning(f"Incomplete visualization {viz_name}: template={os.path.exists(template_path)}, js={os.path.exists(js_path)}")
+                # For nadia_analysis, force include even if files are missing (we'll create them)
+                if viz_name == "nadia_analysis":
+                    visualizations.append(viz_name)
+                    logger.info(f"Force-included nadia_analysis (creating missing files if needed)")
     
     return visualizations
 
@@ -59,12 +103,15 @@ def detect_visualizations():
 VISUALIZATIONS = detect_visualizations()
 logger.info(f"Detected visualizations: {VISUALIZATIONS}")
 
-# Force include nadia_analysis and other essential visualizations
+# Force include essential visualizations
 FORCE_INCLUDE = ["daily_patterns", "time_patterns", "topic_modeling", "graph", "keyword_analysis", "nadia_analysis"]
 for viz in FORCE_INCLUDE:
     if viz not in VISUALIZATIONS:
-        VISUALIZATIONS.append(viz)
-        logger.info(f"Force-added visualization: {viz}")
+        # Check if the Python file exists
+        viz_file = os.path.join(os.path.dirname(__file__), "visualizations", f"{viz}.py")
+        if os.path.exists(viz_file):
+            VISUALIZATIONS.append(viz)
+            logger.info(f"Force-added visualization: {viz}")
 
 # Fallback if auto-detection fails completely
 if not VISUALIZATIONS:
@@ -72,7 +119,6 @@ if not VISUALIZATIONS:
     logger.warning(f"Using fallback visualizations: {VISUALIZATIONS}")
 
 visualization_modules = {}
-
 
 def load_visualization_module(viz_name):
     """Lazy load visualization module when needed."""
@@ -89,7 +135,6 @@ def load_visualization_module(viz_name):
             return None
     return visualization_modules.get(viz_name)
 
-
 @app.route("/")
 def index():
     viz_list = []
@@ -105,13 +150,18 @@ def index():
                 }
             )
         else:
-            logger.warning(f"Visualization {name} could not be loaded")
+            # Add with default values if module can't be loaded
+            viz_list.append(
+                {
+                    "name": name,
+                    "title": name.replace("_", " ").title(),
+                    "description": f"Visualization for {name}",
+                }
+            )
+            logger.warning(f"Visualization {name} could not be loaded, using defaults")
 
-    logger.debug(
-        f"Rendering index with visualizations: {[v['name'] for v in viz_list]}"
-    )
+    logger.debug(f"Rendering index with visualizations: {[v['name'] for v in viz_list]}")
     return render_template("index.html", visualizations=viz_list)
-
 
 @app.route("/data/<viz_name>", methods=["GET", "POST"])
 def get_data(viz_name):
@@ -150,14 +200,20 @@ def get_data(viz_name):
         # Pass parameters as kwargs to get_data function
         data = module.get_data(**params)
 
-        logger.debug(
-            f"Returning data for {viz_name} with params {params}: data keys={list(data.keys()) if isinstance(data, dict) else 'non-dict'}"
-        )
+        logger.debug(f"Returning data for {viz_name} with params {params}: data keys={list(data.keys()) if isinstance(data, dict) else 'non-dict'}")
         return jsonify(data)
     except Exception as e:
         logger.exception(f"Error generating data for {viz_name}")
         return jsonify({"error": str(e)}), 500
 
+# Add a simple test route for debugging
+@app.route("/test")
+def test():
+    return jsonify({
+        "status": "OK",
+        "visualizations": VISUALIZATIONS,
+        "data_files": {k: os.path.basename(v) for k, v in data_config.items()}
+    })
 
 if __name__ == "__main__":
     app.run(debug=True)
