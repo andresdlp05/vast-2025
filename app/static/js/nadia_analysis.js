@@ -4,33 +4,34 @@ function init_nadia_analysis() {
     
     let analysisData = null;
     
-    // Initialize tab switching
+    // Initialize tab switching FIRST
     initTabSwitching();
     
     // Load data from Flask endpoint
-    d3.json("/data/nadia_analysis").then(data => {
-        if (data.error) {
-            showError(data.error);
-            return;
-        }
-        
-        analysisData = data;
-        console.log("Nadia analysis data loaded:", data);
-        
-        // Update executive summary
-        updateExecutiveSummary(data);
-        
-        // Initialize all visualizations
-        updateTimelineTab(data);
-        updateNetworkTab(data);
-        updatePatternsTab(data);
-        updateEvidenceTab(data);
-        updateConclusion(data);
-        
-    }).catch(error => {
-        console.error("Error loading Nadia analysis data:", error);
-        showError(`Failed to load data: ${error.message}`);
-    });
+    d3.json("/data/nadia_analysis")
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+            
+            analysisData = data;
+            console.log("Nadia analysis data loaded:", data);
+            
+            // Update executive summary
+            updateExecutiveSummary(data);
+            
+            // Initialize all visualizations
+            updateTimelineTab(data);
+            updateNetworkTab(data);
+            updatePatternsTab(data);
+            updateEvidenceTab(data);
+            updateConclusion(data);
+        })
+        .catch(error => {
+            console.error("Error loading Nadia analysis data:", error);
+            showError(`Failed to load data: ${error.message}`);
+        });
     
     function showError(message) {
         d3.select("#executive-summary").html(`
@@ -42,8 +43,23 @@ function init_nadia_analysis() {
     }
     
     function initTabSwitching() {
-        d3.selectAll(".analysis-tab").on("click", function() {
+        console.log("Initializing tab switching...");
+        
+        // Remove any existing event listeners
+        d3.selectAll(".analysis-tab").on("click", null);
+        
+        // Add new event listeners
+        d3.selectAll(".analysis-tab").on("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
             const tabName = d3.select(this).attr("data-tab");
+            console.log(`Tab clicked: ${tabName}`);
+            
+            if (!tabName) {
+                console.error("No data-tab attribute found");
+                return;
+            }
             
             // Update tab appearance
             d3.selectAll(".analysis-tab")
@@ -58,21 +74,31 @@ function init_nadia_analysis() {
             
             // Show/hide content
             d3.selectAll(".tab-content").classed("hidden", true);
-            d3.select(`#${tabName}-tab`).classed("hidden", false);
+            const targetTab = d3.select(`#${tabName}-tab`);
+            
+            if (targetTab.empty()) {
+                console.error(`Target tab not found: #${tabName}-tab`);
+                return;
+            }
+            
+            targetTab.classed("hidden", false);
+            console.log(`Switched to tab: ${tabName}`);
         });
+        
+        console.log("Tab switching initialized");
     }
     
     function updateExecutiveSummary(data) {
-        const profile = data.nadia_profile;
-        const suspicion = data.suspicion_analysis;
+        const profile = data.nadia_profile || {};
+        const suspicion = data.suspicion_analysis || {};
         
-        d3.select("#total-communications").text(profile.total_communications);
-        d3.select("#suspicion-score").text(suspicion.overall_score);
-        d3.select("#risk-level").text(suspicion.recommendation);
+        d3.select("#total-communications").text(profile.total_communications || 0);
+        d3.select("#suspicion-score").text(suspicion.overall_score || 0);
+        d3.select("#risk-level").text(suspicion.recommendation || "Unknown");
         
         // Color code the recommendation
         const recElement = d3.select("#recommendation");
-        const recText = suspicion.recommendation;
+        const recText = suspicion.recommendation || "Unknown";
         
         recElement.text(`Recommendation: ${recText}`);
         
@@ -86,16 +112,26 @@ function init_nadia_analysis() {
     }
     
     function updateTimelineTab(data) {
+        console.log("Updating timeline tab...");
         // Create hourly chart
-        createHourlyChart(data.communication_patterns.hourly_distribution);
+        if (data.communication_patterns && data.communication_patterns.hourly_distribution) {
+            createHourlyChart(data.communication_patterns.hourly_distribution);
+        }
         
         // Create timeline events
-        createTimelineEvents(data.timeline);
+        if (data.timeline) {
+            createTimelineEvents(data.timeline);
+        }
     }
     
     function createHourlyChart(hourlyData) {
         const container = d3.select("#hourly-chart");
         container.html(""); // Clear previous content
+        
+        if (!hourlyData || !Array.isArray(hourlyData)) {
+            container.html('<p class="text-gray-500">No hourly data available</p>');
+            return;
+        }
         
         const width = 400;
         const height = 200;
@@ -163,6 +199,11 @@ function init_nadia_analysis() {
         const container = d3.select("#timeline-events");
         container.html("");
         
+        if (!timelineData || !Array.isArray(timelineData)) {
+            container.html('<p class="text-gray-500">No timeline data available</p>');
+            return;
+        }
+        
         const events = container.selectAll(".timeline-event")
             .data(timelineData.slice(0, 20)) // Show first 20 events
             .enter()
@@ -183,17 +224,17 @@ function init_nadia_analysis() {
             event.append("div")
                 .attr("class", "flex justify-between items-start mb-2")
                 .html(`
-                    <div class="font-medium text-sm">${d.datetime}</div>
-                    <div class="text-xs px-2 py-1 rounded ${getEventTypeClass(d.event_type)}">${d.event_type.replace('_', ' ')}</div>
+                    <div class="font-medium text-sm">${d.datetime || 'Unknown time'}</div>
+                    <div class="text-xs px-2 py-1 rounded ${getEventTypeClass(d.event_type || 'normal')}">${(d.event_type || 'normal').replace('_', ' ')}</div>
                 `);
             
             event.append("div")
                 .attr("class", "text-sm text-gray-600 mb-1")
-                .text(`${d.is_sender ? 'To' : 'From'}: ${d.other_party}`);
+                .text(`${d.is_sender ? 'To' : 'From'}: ${d.other_party || 'Unknown'}`);
             
             event.append("div")
                 .attr("class", "text-xs text-gray-500")
-                .text(d.content_preview);
+                .text(d.content_preview || 'No content available');
         });
     }
     
@@ -206,13 +247,23 @@ function init_nadia_analysis() {
     }
     
     function updateNetworkTab(data) {
-        createNetworkGraph(data.network_data);
-        createContactsList(data.nadia_profile.top_contacts);
+        console.log("Updating network tab...");
+        if (data.network_data) {
+            createNetworkGraph(data.network_data);
+        }
+        if (data.nadia_profile && data.nadia_profile.top_contacts) {
+            createContactsList(data.nadia_profile.top_contacts);
+        }
     }
     
     function createNetworkGraph(networkData) {
         const container = d3.select("#network-graph");
         container.html("");
+        
+        if (!networkData || !networkData.nodes || !networkData.links) {
+            container.html('<p class="text-gray-500">No network data available</p>');
+            return;
+        }
         
         const width = 500;
         const height = 350;
@@ -234,14 +285,14 @@ function init_nadia_analysis() {
             .join("line")
             .attr("stroke", "#999")
             .attr("stroke-opacity", 0.6)
-            .attr("stroke-width", d => Math.sqrt(d.weight));
+            .attr("stroke-width", d => Math.sqrt(d.weight || 1));
         
         // Nodes
         const node = svg.append("g")
             .selectAll("circle")
             .data(networkData.nodes)
             .join("circle")
-            .attr("r", d => d.category === "central" ? 15 : Math.max(5, Math.sqrt(d.communication_count) * 2))
+            .attr("r", d => d.category === "central" ? 15 : Math.max(5, Math.sqrt((d.communication_count || 1) * 2)))
             .attr("fill", d => {
                 if (d.category === "central") return "#dc2626";
                 if (d.type === "Person") return "#3b82f6";
@@ -261,7 +312,7 @@ function init_nadia_analysis() {
             .selectAll("text")
             .data(networkData.nodes)
             .join("text")
-            .text(d => d.name)
+            .text(d => d.name || d.id)
             .attr("font-size", d => d.category === "central" ? "12px" : "10px")
             .attr("dx", 15)
             .attr("dy", 4)
@@ -269,7 +320,7 @@ function init_nadia_analysis() {
         
         // Add tooltips
         node.append("title")
-            .text(d => `${d.name} (${d.type})\n${d.communication_count} communications`);
+            .text(d => `${d.name || d.id} (${d.type || 'Unknown'})\n${d.communication_count || 0} communications`);
         
         simulation.on("tick", () => {
             link
@@ -309,6 +360,11 @@ function init_nadia_analysis() {
         const container = d3.select("#contacts-list");
         container.html("");
         
+        if (!topContacts || typeof topContacts !== 'object') {
+            container.html('<p class="text-gray-500">No contacts data available</p>');
+            return;
+        }
+        
         const contacts = Object.entries(topContacts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
@@ -324,14 +380,26 @@ function init_nadia_analysis() {
     }
     
     function updatePatternsTab(data) {
-        createTimingChart(data.communication_patterns.time_distribution);
-        createKeywordChart(data.keyword_analysis.keyword_mentions);
-        createAuthorityAnalysis(data.authority_patterns);
+        console.log("Updating patterns tab...");
+        if (data.communication_patterns && data.communication_patterns.time_distribution) {
+            createTimingChart(data.communication_patterns.time_distribution);
+        }
+        if (data.keyword_analysis && data.keyword_analysis.keyword_mentions) {
+            createKeywordChart(data.keyword_analysis.keyword_mentions);
+        }
+        if (data.authority_patterns) {
+            createAuthorityAnalysis(data.authority_patterns);
+        }
     }
     
     function createTimingChart(timeDistribution) {
         const container = d3.select("#timing-chart");
         container.html("");
+        
+        if (!timeDistribution || typeof timeDistribution !== 'object') {
+            container.html('<p class="text-gray-500">No timing data available</p>');
+            return;
+        }
         
         const width = 300;
         const height = 180;
@@ -382,7 +450,7 @@ function init_nadia_analysis() {
         const container = d3.select("#keyword-chart");
         container.html("");
         
-        if (Object.keys(keywordMentions).length === 0) {
+        if (!keywordMentions || Object.keys(keywordMentions).length === 0) {
             container.append("div")
                 .attr("class", "text-gray-500 text-center py-8")
                 .text("No suspicious keywords detected");
@@ -445,8 +513,13 @@ function init_nadia_analysis() {
         const container = d3.select("#authority-analysis");
         container.html("");
         
-        const permitCount = authorityPatterns.permit_related.length;
-        const authorityCount = authorityPatterns.authority_abuse_indicators.length;
+        if (!authorityPatterns) {
+            container.html('<p class="text-gray-500">No authority patterns data available</p>');
+            return;
+        }
+        
+        const permitCount = (authorityPatterns.permit_related || []).length;
+        const authorityCount = (authorityPatterns.authority_abuse_indicators || []).length;
         
         container.append("div")
             .attr("class", "grid grid-cols-2 gap-4 mb-4")
@@ -462,15 +535,16 @@ function init_nadia_analysis() {
             `);
         
         if (permitCount > 0) {
+            const permitData = authorityPatterns.permit_related || [];
             container.append("div")
                 .attr("class", "mt-4")
                 .html(`
                     <h6 class="font-medium mb-2">Recent Permit Activities:</h6>
                     <div class="space-y-1">
-                        ${authorityPatterns.permit_related.slice(0, 3).map(comm => 
+                        ${permitData.slice(0, 3).map(comm => 
                             `<div class="text-sm p-2 bg-yellow-50 rounded">
-                                <div class="font-medium">${comm.datetime}</div>
-                                <div class="text-gray-600">${comm.content.substring(0, 100)}...</div>
+                                <div class="font-medium">${comm.datetime || 'Unknown time'}</div>
+                                <div class="text-gray-600">${(comm.content || 'No content').substring(0, 100)}...</div>
                             </div>`
                         ).join('')}
                     </div>
@@ -479,15 +553,20 @@ function init_nadia_analysis() {
     }
     
     function updateEvidenceTab(data) {
-        createSuspicionIndicators(data.suspicion_analysis.indicators);
-        createSuspiciousMessages(data.keyword_analysis.suspicious_messages);
+        console.log("Updating evidence tab...");
+        if (data.suspicion_analysis && data.suspicion_analysis.indicators) {
+            createSuspicionIndicators(data.suspicion_analysis.indicators);
+        }
+        if (data.keyword_analysis && data.keyword_analysis.suspicious_messages) {
+            createSuspiciousMessages(data.keyword_analysis.suspicious_messages);
+        }
     }
     
     function createSuspicionIndicators(indicators) {
         const container = d3.select("#suspicion-indicators");
         container.html("");
         
-        if (indicators.length === 0) {
+        if (!indicators || !Array.isArray(indicators) || indicators.length === 0) {
             container.append("div")
                 .attr("class", "text-green-600 p-4 bg-green-50 rounded-lg")
                 .text("No significant suspicion indicators detected.");
@@ -495,16 +574,16 @@ function init_nadia_analysis() {
         }
         
         indicators.forEach(indicator => {
-            const severityClass = getSeverityClass(indicator.severity);
+            const severityClass = getSeverityClass(indicator.severity || 'low');
             
             container.append("div")
                 .attr("class", `p-4 rounded-lg ${severityClass}`)
                 .html(`
                     <div class="flex justify-between items-start mb-2">
-                        <span class="font-medium capitalize">${indicator.type.replace('_', ' ')}</span>
-                        <span class="text-xs px-2 py-1 rounded bg-white bg-opacity-50">${indicator.severity}</span>
+                        <span class="font-medium capitalize">${(indicator.type || 'unknown').replace('_', ' ')}</span>
+                        <span class="text-xs px-2 py-1 rounded bg-white bg-opacity-50">${indicator.severity || 'unknown'}</span>
                     </div>
-                    <div class="text-sm">${indicator.description}</div>
+                    <div class="text-sm">${indicator.description || 'No description available'}</div>
                 `);
         });
     }
@@ -522,7 +601,7 @@ function init_nadia_analysis() {
         const container = d3.select("#suspicious-messages");
         container.html("");
         
-        if (suspiciousMessages.length === 0) {
+        if (!suspiciousMessages || !Array.isArray(suspiciousMessages) || suspiciousMessages.length === 0) {
             container.append("div")
                 .attr("class", "text-gray-500 p-4")
                 .text("No highly suspicious messages detected.");
@@ -537,71 +616,40 @@ function init_nadia_analysis() {
             messageDiv.append("div")
                 .attr("class", "flex justify-between items-start mb-2")
                 .html(`
-                    <div class="font-medium text-sm">${message.datetime}</div>
-                    <div class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Score: ${message.suspicion_score}</div>
+                    <div class="font-medium text-sm">${message.datetime || 'Unknown time'}</div>
+                    <div class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Score: ${message.suspicion_score || 0}</div>
                 `);
             
             messageDiv.append("div")
                 .attr("class", "text-sm text-gray-600 mb-2")
-                .text(`${message.is_sender ? 'To' : 'From'}: ${message.target || message.source}`);
+                .text(`${message.is_sender ? 'To' : 'From'}: ${message.target || message.source || 'Unknown'}`);
             
             messageDiv.append("div")
                 .attr("class", "text-xs text-gray-500 mb-2")
-                .text(message.content.substring(0, 150) + "...");
+                .text((message.content || 'No content').substring(0, 150) + "...");
             
-            messageDiv.append("div")
-                .attr("class", "text-xs")
-                .html(`Keywords: ${message.keywords.map(k => `<span class="bg-red-100 text-red-800 px-1 rounded">${k}</span>`).join(' ')}`);
+            if (message.keywords && Array.isArray(message.keywords)) {
+                messageDiv.append("div")
+                    .attr("class", "text-xs")
+                    .html(`Keywords: ${message.keywords.map(k => `<span class="bg-red-100 text-red-800 px-1 rounded">${k}</span>`).join(' ')}`);
+            }
         });
     }
     
     function updateConclusion(data) {
         const container = d3.select("#conclusion-content");
-        const suspicion = data.suspicion_analysis;
-        const profile = data.nadia_profile;
-        
-        let conclusion = "";
-        let justification = "";
-        
-        if (suspicion.overall_score >= 3) {
-            conclusion = "CLEPPER'S SUSPICIONS APPEAR JUSTIFIED";
-            justification = `
-                <p class="text-red-700 font-semibold mb-4">${conclusion}</p>
-                <p class="mb-3">The analysis reveals multiple concerning patterns in Nadia Conti's behavior:</p>
-                <ul class="list-disc list-inside space-y-2 mb-4">
-                    ${suspicion.indicators.map(ind => `<li>${ind.description}</li>`).join('')}
-                </ul>
-                <p>These patterns suggest potential involvement in illegal activities requiring immediate investigation.</p>
-            `;
-        } else if (suspicion.overall_score >= 1) {
-            conclusion = "SUSPICIONS REQUIRE MONITORING";
-            justification = `
-                <p class="text-yellow-700 font-semibold mb-4">${conclusion}</p>
-                <p class="mb-3">While not definitively proving illegal activity, several concerning indicators warrant continued monitoring:</p>
-                <ul class="list-disc list-inside space-y-2 mb-4">
-                    ${suspicion.indicators.map(ind => `<li>${ind.description}</li>`).join('')}
-                </ul>
-                <p>Recommend enhanced surveillance and documentation of future activities.</p>
-            `;
-        } else {
-            conclusion = "INSUFFICIENT EVIDENCE FOR CURRENT SUSPICIONS";
-            justification = `
-                <p class="text-green-700 font-semibold mb-4">${conclusion}</p>
-                <p class="mb-3">Based on the available communication data, no significant indicators of illegal activity were detected.</p>
-                <p>However, this analysis is limited to communication patterns and does not rule out other forms of evidence.</p>
-            `;
-        }
+        const suspicion = data.suspicion_analysis || {};
+        const profile = data.nadia_profile || {};
         
         container.html(`
             <div class="prose max-w-none">
-                ${justification}
+                <p class="mb-3">Analysis of Nadia Conti's communication patterns has been completed.</p>
                 <div class="mt-6 p-4 bg-gray-50 rounded-lg">
                     <h4 class="font-semibold mb-2">Analysis Summary:</h4>
                     <ul class="list-disc list-inside space-y-1 text-sm">
-                        <li>Total communications analyzed: ${profile.total_communications}</li>
-                        <li>Communication period: ${profile.date_range.start} to ${profile.date_range.end}</li>
-                        <li>Suspicion indicators found: ${suspicion.overall_score}</li>
-                        <li>Risk level: ${suspicion.recommendation}</li>
+                        <li>Total communications analyzed: ${profile.total_communications || 0}</li>
+                        <li>Suspicion indicators found: ${suspicion.overall_score || 0}</li>
+                        <li>Risk level: ${suspicion.recommendation || 'Unknown'}</li>
                     </ul>
                 </div>
             </div>
@@ -609,24 +657,31 @@ function init_nadia_analysis() {
     }
     
     function showMessageModal(messageData) {
+        console.log("Showing message modal for:", messageData);
+        
         const modal = d3.select("#message-modal");
         const content = d3.select("#message-modal-content");
+        
+        if (modal.empty()) {
+            console.error("Message modal not found");
+            return;
+        }
         
         content.html(`
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div><strong>Date:</strong> ${messageData.date}</div>
-                    <div><strong>Time:</strong> ${messageData.time}</div>
-                    <div><strong>From:</strong> ${messageData.source}</div>
-                    <div><strong>To:</strong> ${messageData.target}</div>
+                    <div><strong>Date:</strong> ${messageData.date || 'Unknown'}</div>
+                    <div><strong>Time:</strong> ${messageData.time || 'Unknown'}</div>
+                    <div><strong>From:</strong> ${messageData.source || 'Unknown'}</div>
+                    <div><strong>To:</strong> ${messageData.target || 'Unknown'}</div>
                 </div>
                 <div>
                     <strong>Content:</strong>
                     <div class="mt-2 p-3 bg-gray-50 rounded-lg text-sm">
-                        ${messageData.content}
+                        ${messageData.content || 'No content available'}
                     </div>
                 </div>
-                ${messageData.keywords ? `
+                ${messageData.keywords && Array.isArray(messageData.keywords) && messageData.keywords.length > 0 ? `
                     <div>
                         <strong>Suspicious Keywords:</strong>
                         <div class="mt-2">
