@@ -28,9 +28,8 @@ app.config["RELATIONSHIPS_FILE"] = os.path.join(
 )  # New relationships file
 
 # List of visualization modules
-VISUALIZATIONS = ["time_patterns", "daily_patterns", "topic_modeling", "graph"]
-
-# Cache for loaded modules
+#VISUALIZATIONS = ["time_patterns", "daily_patterns", "topic_modeling", "graph", "nadia_analysis"]
+VISUALIZATIONS = ["time_patterns", "daily_patterns", "topic_modeling", "graph", "keyword_analysis"]
 visualization_modules = {}
 
 

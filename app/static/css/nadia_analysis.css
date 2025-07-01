@@ -1,0 +1,273 @@
+/* app/static/css/nadia_analysis.css */
+
+.analysis-tab {
+    border-color: transparent;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.analysis-tab:hover {
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.analysis-tab.active {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.tab-content {
+    min-height: 400px;
+}
+
+.timeline-event {
+    transition: all 0.2s ease;
+}
+
+.timeline-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.visualization-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.suspicion-indicator {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.network-node {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.network-node:hover {
+    stroke-width: 3px;
+    filter: brightness(1.2);
+}
+
+.message-modal-overlay {
+    backdrop-filter: blur(4px);
+}
+
+.keyword-highlight {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.risk-indicator {
+    position: relative;
+    overflow: hidden;
+}
+
+.risk-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.evidence-card {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.evidence-card.high-risk {
+    border-left-color: #ef4444;
+}
+
+.evidence-card.medium-risk {
+    border-left-color: #f59e0b;
+}
+
+.evidence-card.low-risk {
+    border-left-color: #3b82f6;
+}
+
+.contact-item {
+    transition: all 0.2s ease;
+}
+
+.contact-item:hover {
+    background-color: #f3f4f6;
+    transform: translateX(2px);
+}
+
+.chart-container {
+    position: relative;
+}
+
+.chart-container svg {
+    border-radius: 8px;
+}
+
+.tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.tooltip.show {
+    opacity: 1;
+}
+
+.suspicious-message {
+    border-left: 3px solid #ef4444;
+    background: linear-gradient(to right, #fef2f2, #ffffff);
+}
+
+.permit-message {
+    border-left: 3px solid #f59e0b;
+    background: linear-gradient(to right, #fffbeb, #ffffff);
+}
+
+.normal-message {
+    border-left: 3px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.conclusion-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+}
+
+.scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Network graph specific styles */
+.network-link {
+    stroke-opacity: 0.6;
+    transition: stroke-opacity 0.2s ease;
+}
+
+.network-link:hover {
+    stroke-opacity: 1;
+}
+
+.network-label {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    fill: #374151;
+    pointer-events: none;
+}
+
+/* Timeline specific styles */
+.timeline-container {
+    position: relative;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 14px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #3b82f6;
+    z-index: 1;
+}
+
+.timeline-dot.suspicious {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.timeline-dot.permit {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .tab-content {
+        min-height: 300px;
+    }
+    
+    .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .analysis-tab {
+        font-size: 12px;
+        padding: 8px 4px;
+    }
+    
+    #network-graph {
+        height: 250px;
+    }
+}

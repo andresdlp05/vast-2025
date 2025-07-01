@@ -1,0 +1,138 @@
+<!-- app/templates/nadia_analysis.html -->
+<div class="visualization-container p-4">
+    <h2 class="text-xl font-semibold mb-4">Analysis of Nadia Conti</h2>
+    <p class="text-gray-600 mb-6">
+        Investigation into Nadia Conti's activities to evaluate Clepper's suspicions of illegal behavior.
+        This analysis examines communication patterns, relationships, and behavioral indicators.
+    </p>
+
+    <!-- Executive Summary -->
+    <div id="executive-summary" class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-4">Executive Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600" id="total-communications">--</div>
+                <div class="text-sm text-gray-600">Total Communications</div>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-yellow-600" id="suspicion-score">--</div>
+                <div class="text-sm text-gray-600">Suspicion Indicators</div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-red-600" id="risk-level">--</div>
+                <div class="text-sm text-gray-600">Risk Assessment</div>
+            </div>
+        </div>
+        <div id="recommendation" class="mt-4 p-3 rounded-lg font-medium"></div>
+    </div>
+
+    <!-- Main Analysis Tabs -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+                <button class="analysis-tab active py-4 px-1 border-b-2 font-medium text-sm" data-tab="timeline">
+                    Communication Timeline
+                </button>
+                <button class="analysis-tab py-4 px-1 border-b-2 font-medium text-sm" data-tab="network">
+                    Network Analysis
+                </button>
+                <button class="analysis-tab py-4 px-1 border-b-2 font-medium text-sm" data-tab="patterns">
+                    Behavioral Patterns
+                </button>
+                <button class="analysis-tab py-4 px-1 border-b-2 font-medium text-sm" data-tab="evidence">
+                    Suspicious Evidence
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-6">
+            <!-- Timeline Tab -->
+            <div id="timeline-tab" class="tab-content">
+                <h4 class="text-lg font-semibold mb-4">Communication Timeline</h4>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h5 class="font-medium mb-3">Hourly Communication Pattern</h5>
+                        <div id="hourly-chart" class="h-64"></div>
+                    </div>
+                    <div>
+                        <h5 class="font-medium mb-3">Timeline Events</h5>
+                        <div id="timeline-events" class="h-64 overflow-y-auto space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Tab -->
+            <div id="network-tab" class="tab-content hidden">
+                <h4 class="text-lg font-semibold mb-4">Communication Network</h4>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div id="network-graph" class="h-96 border rounded-lg"></div>
+                    </div>
+                    <div>
+                        <h5 class="font-medium mb-3">Key Contacts</h5>
+                        <div id="contacts-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patterns Tab -->
+            <div id="patterns-tab" class="tab-content hidden">
+                <h4 class="text-lg font-semibold mb-4">Behavioral Pattern Analysis</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h5 class="font-medium mb-3">Communication Timing</h5>
+                        <div id="timing-chart" class="h-48"></div>
+                    </div>
+                    <div>
+                        <h5 class="font-medium mb-3">Keyword Analysis</h5>
+                        <div id="keyword-chart" class="h-48"></div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h5 class="font-medium mb-3">Authority-Related Communications</h5>
+                    <div id="authority-analysis" class="bg-gray-50 p-4 rounded-lg"></div>
+                </div>
+            </div>
+
+            <!-- Evidence Tab -->
+            <div id="evidence-tab" class="tab-content hidden">
+                <h4 class="text-lg font-semibold mb-4">Suspicious Evidence</h4>
+                <div class="space-y-6">
+                    <div>
+                        <h5 class="font-medium mb-3 text-red-600">Suspicion Indicators</h5>
+                        <div id="suspicion-indicators" class="space-y-3"></div>
+                    </div>
+                    <div>
+                        <h5 class="font-medium mb-3">Most Suspicious Messages</h5>
+                        <div id="suspicious-messages" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conclusion Section -->
+    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Investigation Conclusion</h3>
+        <div id="conclusion-content">
+            <div class="prose max-w-none">
+                <p class="text-gray-600">Analysis results will appear here after data loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for detailed message view -->
+<div id="message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-3 border-b">
+            <h3 class="text-xl font-semibold">Communication Details</h3>
+            <button id="close-message-modal" class="text-gray-500 hover:text-gray-700">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="message-modal-content" class="mt-4"></div>
+    </div>
+</div>
