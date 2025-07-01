@@ -59,8 +59,8 @@ def detect_visualizations():
 VISUALIZATIONS = detect_visualizations()
 logger.info(f"Detected visualizations: {VISUALIZATIONS}")
 
-# Force include daily_patterns if missing
-FORCE_INCLUDE = ["daily_patterns", "time_patterns", "topic_modeling", "graph", "keyword_analysis"]
+# Force include nadia_analysis and other essential visualizations
+FORCE_INCLUDE = ["daily_patterns", "time_patterns", "topic_modeling", "graph", "keyword_analysis", "nadia_analysis"]
 for viz in FORCE_INCLUDE:
     if viz not in VISUALIZATIONS:
         VISUALIZATIONS.append(viz)
@@ -68,7 +68,7 @@ for viz in FORCE_INCLUDE:
 
 # Fallback if auto-detection fails completely
 if not VISUALIZATIONS:
-    VISUALIZATIONS = ["time_patterns", "daily_patterns", "topic_modeling", "graph", "keyword_analysis"]
+    VISUALIZATIONS = ["time_patterns", "daily_patterns", "topic_modeling", "graph", "keyword_analysis", "nadia_analysis"]
     logger.warning(f"Using fallback visualizations: {VISUALIZATIONS}")
 
 visualization_modules = {}

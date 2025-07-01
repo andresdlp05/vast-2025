@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ def get_data():
         # Load communication data
         comm_file = current_app.config.get("COMMUNICATION_FILE")
         if not comm_file:
+            logger.error("Communication file not configured")
             return {"error": "Communication file not configured"}
         
         with open(comm_file, "r") as f:
@@ -30,42 +31,62 @@ def get_data():
         for link in comm_data.get("links", []):
             if link.get("source") == nadia_id or link.get("target") == nadia_id:
                 try:
-                    comm_datetime = datetime.fromisoformat(link.get("datetime", "2040-01-01T00:00:00"))
+                    datetime_str = link.get("datetime", "2040-01-01T00:00:00")
+                    # Handle different datetime formats
+                    if "T" in datetime_str:
+                        comm_datetime = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
+                    else:
+                        comm_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
                     
                     nadia_communications.append({
-                        "id": link.get("event_id"),
-                        "datetime": link.get("datetime"),
+                        "id": link.get("event_id", f"comm_{len(nadia_communications)}"),
+                        "datetime": datetime_str,
                         "date": comm_datetime.strftime("%Y-%m-%d"),
                         "time": comm_datetime.strftime("%H:%M:%S"),
                         "hour": comm_datetime.hour,
-                        "source": link.get("source"),
-                        "target": link.get("target"),
+                        "source": link.get("source", ""),
+                        "target": link.get("target", ""),
                         "content": link.get("content", ""),
                         "is_sender": link.get("source") == nadia_id
                     })
                 except Exception as e:
-                    logger.warning(f"Error parsing datetime: {e}")
+                    logger.warning(f"Error parsing datetime {link.get('datetime')}: {e}")
+                    # Add communication with fallback values
+                    nadia_communications.append({
+                        "id": link.get("event_id", f"comm_{len(nadia_communications)}"),
+                        "datetime": "2040-01-01T00:00:00",
+                        "date": "2040-01-01",
+                        "time": "00:00:00",
+                        "hour": 0,
+                        "source": link.get("source", ""),
+                        "target": link.get("target", ""),
+                        "content": link.get("content", ""),
+                        "is_sender": link.get("source") == nadia_id
+                    })
                     continue
         
         if not nadia_communications:
+            logger.warning("No communications found for Nadia Conti")
             return {"error": "No communications found for Nadia Conti"}
+        
+        logger.info(f"Found {len(nadia_communications)} communications for Nadia Conti")
         
         # Sort by datetime
         nadia_communications.sort(key=lambda x: x["datetime"])
         
-        # Analyze contacts using Counter (not defaultdict!)
+        # Analyze contacts using Counter
         contacts = Counter()
         for comm in nadia_communications:
             other_party = comm["target"] if comm["is_sender"] else comm["source"]
-            if other_party:
+            if other_party and other_party != nadia_id:
                 contacts[other_party] += 1
         
         # Analyze timing patterns
         time_patterns = {
-            "early_morning": 0,
-            "business_hours": 0,
-            "evening": 0,
-            "late_night": 0
+            "early_morning": 0,    # 5-7 AM
+            "business_hours": 0,   # 8-17 PM  
+            "evening": 0,          # 18-22 PM
+            "late_night": 0        # 23-4 AM
         }
         
         hourly_distribution = [0] * 24
@@ -80,7 +101,7 @@ def get_data():
                 time_patterns["business_hours"] += 1
             elif 18 <= hour <= 22:
                 time_patterns["evening"] += 1
-            else:
+            else:  # 23-24 or 0-4
                 time_patterns["late_night"] += 1
         
         # Analyze suspicious keywords
@@ -88,7 +109,8 @@ def get_data():
             "permit", "authorization", "clearance", "secret", "private", "special",
             "arrangement", "deal", "payment", "money", "cash", "funding",
             "restricted", "access", "corridor", "bypass", "loophole",
-            "mining", "extraction", "drilling", "equipment", "operation"
+            "mining", "extraction", "drilling", "equipment", "operation",
+            "illegal", "unauthorized", "bribe", "corruption", "under table"
         ]
         
         keyword_mentions = Counter()
@@ -110,6 +132,9 @@ def get_data():
                     "suspicion_score": len(found_keywords)
                 })
         
+        # Sort suspicious messages by suspicion score
+        suspicious_messages.sort(key=lambda x: x["suspicion_score"], reverse=True)
+        
         # Find permit-related communications
         permit_related = []
         for comm in nadia_communications:
@@ -128,7 +153,8 @@ def get_data():
         
         network_links = []
         
-        for contact, count in contacts.items():
+        # Add top contacts as nodes
+        for contact, count in contacts.most_common(15):  # Top 15 contacts
             if contact:
                 network_nodes.append({
                     "id": contact,
@@ -150,9 +176,11 @@ def get_data():
         for i, comm in enumerate(nadia_communications):
             event_type = "normal"
             
-            if comm["id"] in [msg["id"] for msg in suspicious_messages]:
+            # Determine event type based on content
+            content_lower = comm["content"].lower()
+            if any(keyword in content_lower for keyword in ["secret", "private", "illegal", "bribe", "unauthorized"]):
                 event_type = "suspicious"
-            elif any(term in comm["content"].lower() for term in ["permit", "authorization"]):
+            elif any(term in content_lower for term in ["permit", "authorization", "approval", "clearance"]):
                 event_type = "permit_related"
             
             timeline_events.append({
@@ -171,44 +199,60 @@ def get_data():
         # Generate suspicion analysis
         suspicion_indicators = []
         
-        if time_patterns["late_night"] > len(nadia_communications) * 0.2:
+        # Check for unusual timing patterns
+        if time_patterns["late_night"] > len(nadia_communications) * 0.15:  # More than 15%
             suspicion_indicators.append({
                 "type": "timing",
-                "description": f"High number of late-night communications ({time_patterns['late_night']} out of {len(nadia_communications)})",
+                "description": f"Unusually high number of late-night communications ({time_patterns['late_night']} out of {len(nadia_communications)} total)",
                 "severity": "medium"
             })
         
+        # Check for suspicious keywords
         if len(keyword_mentions) > 0:
+            top_keywords = list(keyword_mentions.keys())[:5]
             suspicion_indicators.append({
                 "type": "content",
-                "description": f"Multiple suspicious keywords found: {', '.join(list(keyword_mentions.keys())[:5])}",
-                "severity": "high"
+                "description": f"Multiple suspicious keywords detected: {', '.join(top_keywords)}",
+                "severity": "high" if len(keyword_mentions) > 3 else "medium"
             })
         
+        # Check for permit-related activity
         if len(permit_related) > 3:
             suspicion_indicators.append({
-                "type": "authority_abuse",
+                "type": "authority_abuse", 
                 "description": f"Frequent involvement in permit-related communications ({len(permit_related)} instances)",
                 "severity": "high"
             })
         
+        # Check for concentrated communication patterns
         high_contact_entities = [contact for contact, count in contacts.items() if count > 5]
         if len(high_contact_entities) > 0:
             suspicion_indicators.append({
                 "type": "network",
-                "description": f"Frequent communication with key entities: {', '.join(high_contact_entities[:3])}",
+                "description": f"Frequent communication with specific entities: {', '.join(high_contact_entities[:3])}",
                 "severity": "medium"
             })
         
-        # Return the data structure
-        return {
+        # Determine overall recommendation
+        high_severity_count = sum(1 for indicator in suspicion_indicators if indicator["severity"] == "high")
+        medium_severity_count = sum(1 for indicator in suspicion_indicators if indicator["severity"] == "medium")
+        
+        if high_severity_count >= 2:
+            recommendation = "INVESTIGATE FURTHER"
+        elif high_severity_count >= 1 or medium_severity_count >= 3:
+            recommendation = "MONITOR"
+        else:
+            recommendation = "LOW RISK"
+        
+        # Prepare response data
+        response_data = {
             "nadia_profile": {
                 "total_communications": len(nadia_communications),
                 "date_range": {
                     "start": nadia_communications[0]["date"] if nadia_communications else None,
                     "end": nadia_communications[-1]["date"] if nadia_communications else None
                 },
-                "top_contacts": dict(contacts.most_common(10))  # This line now works with Counter
+                "top_contacts": dict(contacts.most_common(10))
             },
             "communication_patterns": {
                 "time_distribution": time_patterns,
@@ -217,7 +261,7 @@ def get_data():
             },
             "keyword_analysis": {
                 "keyword_mentions": dict(keyword_mentions.most_common(10)),
-                "suspicious_messages": suspicious_messages[:20]
+                "suspicious_messages": suspicious_messages[:20]  # Top 20 most suspicious
             },
             "authority_patterns": {
                 "permit_related": permit_related,
@@ -231,10 +275,13 @@ def get_data():
             "suspicion_analysis": {
                 "indicators": suspicion_indicators,
                 "overall_score": len(suspicion_indicators),
-                "recommendation": "INVESTIGATE FURTHER" if len(suspicion_indicators) >= 3 else "MONITOR" if len(suspicion_indicators) >= 1 else "LOW RISK"
+                "recommendation": recommendation
             }
         }
         
+        logger.info(f"Generated analysis with {len(suspicion_indicators)} indicators, recommendation: {recommendation}")
+        return response_data
+        
     except Exception as e:
-        logger.error(f"Error in nadia_analysis: {str(e)}")
+        logger.error(f"Error in nadia_analysis: {str(e)}", exc_info=True)
         return {"error": f"Analysis error: {str(e)}"}
