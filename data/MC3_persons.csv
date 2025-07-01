@@ -1,0 +1,19 @@
+label,name,sub_type,id,is_pseudonym
+Sam,Sam,Person,Sam,False
+Kelly,Kelly,Person,Kelly,True
+Nadia Conti,Nadia Conti,Person,Nadia Conti,False
+Elise,Elise,Person,Elise,True
+Liam Thorne,Liam Thorne,Person,Liam Thorne,False
+Samantha Blake,Samantha Blake,Person,Samantha Blake,False
+Davis,Davis,Person,Davis,False
+Rodriguez,Rodriguez,Person,Rodriguez,True
+Sailor Shift,Sailor Shift,Person,Sailor Shift,False
+Clepper Jensen,Clepper Jensen,Person,Clepper Jensen,False
+Miranda Jordan,Miranda Jordan,Person,Miranda Jordan,False
+The Intern,The Intern,Person,The Intern,True
+The Lookout,The Lookout,Person,The Lookout,True
+The Accountant,The Accountant,Person,The Accountant,True
+Mrs. Money,Mrs. Money,Person,Mrs. Money,True
+The Middleman,The Middleman,Person,The Middleman,True
+Boss,Boss,Person,Boss,True
+Small Fry,Small Fry,Person,Small Fry,True

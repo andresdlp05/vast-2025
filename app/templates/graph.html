@@ -1,0 +1,79 @@
+<div class="visualization-container p-4">
+    <!-- FLEX WRAPPER -->
+    <h2 class="text-xl font-semibold mb-4">Network Exploration Dashboard</h2>
+    <div id="main">
+        <!-- GRAPH PANEL -->
+        <div id="graph-row" style="display:flex; gap:20px; margin-bottom:20px;">
+            <!-- Communication panel -->
+            <div class="graph-panel" style="flex:1; display:flex; flex-direction:column;">
+                <h3 style="margin-bottom:8px">Communication Graph</h3>
+                <div id="graph-container-2" style="flex:1"></div>
+                <div id="selected-nodes-display">Selected nodes:</div>
+                <button id="clear-filter-btn" class="mb-2 px-3 py-1 bg-gray-200 rounded">
+                    Clear Selection
+                </button>
+            </div>
+
+            <!-- Relationship panel -->
+            <div class="graph-panel" style="flex:1; display:flex; flex-direction:column;">
+                <!-- title + checkbox row -->
+                <div style="display:flex; align-items:center; margin-bottom:8px;">
+                    <h3 style="margin:0; font-size:1.125rem; font-weight:500;">Relationship Graph</h3>
+                    <input
+                        type="checkbox"
+                        id="hide-evidence-checkbox"
+                        style="margin-left:12px; margin-top:2px;"
+                    />
+                    <label
+                        for="hide-evidence-checkbox"
+                        style="margin-left:4px; font-size:0.875rem; cursor:pointer;"
+                    >
+                        Hide evidence
+                    </label>
+                </div>
+                <div id="relationship-container" style="flex:1;"></div>
+            </div>
+        </div>
+        
+        <!-- FILTERS AND CHAT/HEATMAP ROW -->
+        <div id="chat-heatmap-row" style="display:flex; gap:20px; margin-top:20px;">
+            <!-- Chat panel -->
+            <div id="chat-panel" style="flex: 1; display: flex; flex-direction: column;">
+                <h2 class="text-xl font-semibold mb-2">Chat view</h2>
+                <div id="chat-window"
+                    style="flex:1; border:1px solid #ccc; border-radius:8px; padding:10px;">
+                    <!-- chat bubbles go here -->
+                </div>
+                <div id="chat-filters" style="margin-bottom:8px; display:flex; gap:12px; flex-wrap:wrap;">
+                    <label style="font-size:0.875rem;">
+                        From: 
+                        <input type="datetime-local" id="filter-start" style="margin-left:4px;">
+                    </label>
+                    <label style="font-size:0.875rem;">
+                        To: 
+                        <input type="datetime-local" id="filter-end" style="margin-left:4px;">
+                    </label>
+                    <label style="font-size:0.875rem;">
+                        ID: 
+                        <input type="text" id="filter-event-id" placeholder="Event ID" style="margin-left:4px; width:100px;">
+                    </label>
+                    <label style="font-size:0.875rem;">
+                        Source: 
+                        <select id="filter-source" style="margin-left:4px;">
+                        <option value="">All</option>
+                        </select>
+                    </label>
+                    <button id="apply-chat-filters" style="padding:2px 8px;">Apply</button>
+                    <button id="clear-chat-filters" style="padding:2px 8px;">Clear</button>
+                </div>
+            </div>
+
+            <!-- Heatmap panel -->
+            <div id="heatmap-panel" style="flex: 1; display: flex; flex-direction: column; align-items: stretch;">
+                <h2 class="text-xl font-semibold mb-2">Entity Similarity Heatmap</h2>
+                <div id="heatmap-container" style="flex: 1;"></div>
+            </div>
+
+        </div>
+    </div>
+</div>

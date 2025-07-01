@@ -1,0 +1,149 @@
+/* ===== Animation & Loading Styles ===== */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.visualization-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* ===== Form Control Styles ===== */
+.filter-select {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 6px 4px;
+    background-color: white;
+    font-size: 14px;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.filter-label {
+    font-size: 14px;
+    color: #4b5563;
+    margin-bottom: 4px;
+}
+
+.clear-filter {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px;
+    margin-left: 4px;
+}
+
+.filter-control {
+    position: relative;
+}
+
+.filter-control .clear-filter {
+    position: absolute;
+    top: 1.5rem;
+    right: 0.5rem;
+    z-index: 10;
+}
+
+/* ===== Button & Pagination Styles ===== */
+#apply-filters,
+#reset-filters {
+    transition: background-color 0.2s;
+}
+
+#pagination-controls {
+    padding: 10px 0;
+    border-top: 1px solid #e5e7eb;
+}
+
+#page-buttons button {
+    min-width: 2rem;
+}
+
+#prev-page,
+#next-page {
+    min-width: 6rem;
+}
+
+#prev-page:disabled,
+#next-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== Table Styles ===== */
+#event-table {
+    font-size: 0.875rem;
+}
+
+#event-table th {
+    padding: 0.5rem 0.75rem;
+}
+
+#event-table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: top;
+}
+
+#event-table tr {
+    transition: background-color 0.2s;
+}
+
+#event-table tr:hover {
+    background-color: #f0f9ff;
+}
+
+/* ===== Modal & Detail Styles ===== */
+#node-details-modal pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+}
+
+#node-details-content>div {
+    margin-bottom: 1.5rem;
+}
+
+/* ===== Utility Classes ===== */
+.max-w-xs {
+    max-width: 20rem;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bg-purple-100 {
+    background-color: #f3e8fd;
+}
+
+#event-count {
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+/* ===== Visualization Styles ===== */
+rect:hover {
+    opacity: 0.8;
+}

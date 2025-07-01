@@ -1,0 +1,209 @@
+<div class="visualization-container">
+    <!-- Modal for detailed view -->
+    <div id="node-details-modal"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div
+            class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-xl font-semibold">Node Details</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-4">
+                <div id="node-details-content" class="font-mono text-sm bg-gray-50 p-4 rounded overflow-x-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2">Time of Day Patterns</h2>
+    <p class="text-gray-700 mb-4">Analysis of event timing with filtering capabilities</p>
+
+    <!-- Filter Controls -->
+    <div class="bg-gray-50 p-4 mb-6">
+        <h3 class="text-lg font-medium mb-3">Filters</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <!-- Event Type Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Event Type</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="event-type">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="event-type-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <!-- Event date Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Date</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="date">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-3" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="date-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options populated by JavaScript -->
+                </select>
+            </div>
+
+            <!-- Source Type Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Source Type</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="source-type">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-3" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="source-type-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <!-- Target Type Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Target Type</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="target-type">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-3" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="target-type-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <!-- Source Entity Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Source Entity</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="source-entity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-3" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="source-entity-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <!-- Target Entity Filter -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="block text-xs font-medium text-gray-700">Target Entity</label>
+                    <button class="text-gray-400 hover:text-red-600 clear-filter" data-filter="target-entity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-3" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <select id="target-entity-filter" class="filter-select w-full text-xs" multiple size="4">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-3">
+            <button id="apply-filters" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Apply Filters
+            </button>
+            <div class="ml-auto text-sm text-gray-500">
+                <span id="event-count">0</span> events match filters
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualizations -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <h3 class="text-lg font-medium mb-2">Events by Hour</h3>
+            <div id="hourly-chart">
+                <div class="visualization-loading">Loading chart...</div>
+            </div>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <h3 class="text-lg font-medium mb-2">Event Distribution</h3>
+            <div id="legend"></div>
+            <div id="heatmap">
+                <div class="visualization-loading">Loading heatmap...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Table -->
+    <div class="bg-gray-50 p-4 rounded-lg shadow-sm mb-4">
+        <h3 class="text-lg font-medium mb-2">Event Details</h3>
+        <div class="overflow-x-auto">
+            <table id="event-table" class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Date & Time</th>
+                        <th class="px-3 py-2 text-left">Type</th>
+                        <th class="px-3 py-2 text-left">Evidence</th>
+                        <th class="px-3 py-2 text-left">Text</th>
+                        <th class="px-3 py-2 text-left">Sources</th>
+                        <th class="px-3 py-2 text-left">Targets</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="6" class="px-3 py-2 text-center text-gray-500">
+                            Loading events...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="mt-4 flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                <span id="page-start">0</span> to <span id="page-end">0</span> of
+                <span id="total-events">0</span> events
+            </div>
+            <div class="flex space-x-2">
+                <button id="prev-page"
+                    class="px-3 py-1 border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    disabled>
+                    Previous
+                </button>
+                <div id="page-buttons" class="flex space-x-1">
+                    <!-- Page buttons will be added here -->
+                </div>
+                <button id="next-page"
+                    class="px-3 py-1 border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    disabled>
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

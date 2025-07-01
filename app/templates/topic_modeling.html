@@ -1,0 +1,106 @@
+<div class="visualization-container p-4">
+    <h2 class="text-xl font-semibold mb-4">Topic Modeling Explorer</h2>
+    
+    <!-- Method Info Display -->
+    <div id="method-info" class="mb-3 text-sm text-gray-600 bg-blue-50 p-2 rounded-md">Loading...</div>
+
+    <!-- Controls Panel -->
+    <div class="controls mb-4 p-3 bg-gray-50 rounded-md shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <!-- Topic Method Selector -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Topic Extraction Method:</label>
+                <select id="topic-method" class="w-full p-2 border rounded-md">
+                    <option value="bertopic">BERTopic (Recommended)</option>
+                    <option value="lda?vectorizer=tfidf">LDA with TF-IDF</option>
+                    <option value="lda?vectorizer=bow">LDA with BOW</option>
+                    <option value="tfidf">TF-IDF Keywords</option>
+                </select>
+            </div>
+
+            <!-- Topic Count Control -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Topic Count: <span id="topic-count-display">Auto</span></label>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="topic-count-auto" class="rounded" checked>
+                    <label for="topic-count-auto" class="text-sm">Auto</label>
+                </div>
+                <input type="range" id="topic-count" class="w-full mt-1" min="5" max="20" step="1" value="10" disabled>
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>5</span>
+                    <span>20</span>
+                </div>
+            </div>
+
+            <!-- Topic Selector -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Select Topic:</label>
+                <select id="topic-selector" class="w-full p-2 border rounded-md">
+                    <option value="">-- Loading Topics --</option>
+                </select>
+            </div>
+
+            <!-- Model Metrics -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Model Quality:</label>
+                <div id="model-metrics" class="text-xs p-2 bg-white border rounded-md">
+                    <div>Coherence: --</div>
+                    <div>Perplexity: --</div>
+                    <div>Diversity: --</div>
+                </div>
+            </div>
+
+            <!-- Visualization Controls -->
+            <div class="flex items-end">
+                <button id="reset-view" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Reset View
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Visualization -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Graph Panel -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-4">
+            <div id="graph-container" class="h-[600px]"></div>
+        </div>
+
+        <!-- Topic Details Panel -->
+        <div class="bg-white rounded-lg shadow-md p-4">
+            <h3 class="text-lg font-semibold mb-3">Topic Details</h3>
+            <div id="topic-details" class="mb-4">
+                <p class="text-gray-500">Select a topic to view details</p>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-3">Top Entities</h3>
+            <div id="entity-ranking" class="h-64 overflow-y-auto">
+                <p class="text-gray-500">Entities will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Section -->
+    <div class="mt-6 bg-white rounded-lg shadow-md p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Messages</h3>
+            <div class="text-sm">
+                <span id="message-count">0</span> messages found
+            </div>
+        </div>
+
+        <div id="messages-container" class="mb-4">
+            <p class="text-gray-500">Select a topic to view related messages</p>
+        </div>
+
+        <div id="messages-pagination" class="flex justify-between items-center">
+            <button id="prev-page" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                Previous
+            </button>
+            <span id="page-info">Page 1 of 1</span>
+            <button id="next-page" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                Next
+            </button>
+        </div>
+    </div>
+</div>

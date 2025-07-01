@@ -1,0 +1,90 @@
+#daily-patterns-vis {
+    flex: 1;
+    position: relative;
+}
+
+.day-band {
+    stroke: #cbd5e1;
+    stroke-width: 1;
+}
+
+.marker {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.marker:hover {
+    transform: scale(1.15);
+    filter: brightness(1.2);
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: #f9fafb;
+    transition: background 0.2s;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.coords-label {
+    font-size: 10px;
+    font-family: monospace;
+}
+
+#daily-patterns-legend {
+    min-width: 250px;
+    background: #f9fafb;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Scrollbar styling */
+#daily-patterns-legend::-webkit-scrollbar {
+    width: 8px;
+}
+
+#daily-patterns-legend::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+#daily-patterns-legend::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+#daily-patterns-legend::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.keyword-tag {
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.marker-group {
+    transition: opacity 0.3s ease;
+}
