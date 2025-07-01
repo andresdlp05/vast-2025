@@ -45,48 +45,69 @@ function init_nadia_analysis() {
     function initTabSwitching() {
         console.log("Initializing tab switching...");
         
-        // Remove any existing event listeners
-        d3.selectAll(".analysis-tab").on("click", null);
-        
-        // Add new event listeners
-        d3.selectAll(".analysis-tab").on("click", function(event) {
-            event.preventDefault();
-            event.stopPropagation();
+        // Add new event listeners SOLO SI NO EXISTEN YA
+        d3.selectAll(".analysis-tab").each(function() {
+            const button = d3.select(this);
+            const hasListener = button.property('__hasTabListener');
             
-            const tabName = d3.select(this).attr("data-tab");
-            console.log(`Tab clicked: ${tabName}`);
-            
-            if (!tabName) {
-                console.error("No data-tab attribute found");
-                return;
-            }
-            
-            // Update tab appearance
-            d3.selectAll(".analysis-tab")
-                .classed("active", false)
-                .classed("border-blue-500 text-blue-600", false)
-                .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", true);
-            
-            d3.select(this)
-                .classed("active", true)
-                .classed("border-blue-500 text-blue-600", true)
-                .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", false);
-            
-            // Show/hide content
-            d3.selectAll(".tab-content").classed("hidden", true);
-            const targetTab = d3.select(`#${tabName}-tab`);
-            
-            if (targetTab.empty()) {
-                console.error(`Target tab not found: #${tabName}-tab`);
-                return;
-            }
-            
-            targetTab.classed("hidden", false);
-            console.log(`Switched to tab: ${tabName}`);
-            
-            // NO re-trigger - just ensure the data is already loaded
-            if (analysisData) {
-                console.log(`Tab ${tabName} is now visible with existing data`);
+            if (!hasListener) {
+                button.on("click", function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const tabName = d3.select(this).attr("data-tab");
+                    console.log(`Tab clicked: ${tabName}`);
+                    
+                    if (!tabName) {
+                        console.error("No data-tab attribute found");
+                        return;
+                    }
+                    
+                    // Update tab appearance
+                    d3.selectAll(".analysis-tab")
+                        .classed("active", false)
+                        .classed("border-blue-500 text-blue-600", false)
+                        .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", true);
+                    
+                    d3.select(this)
+                        .classed("active", true)
+                        .classed("border-blue-500 text-blue-600", true)
+                        .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", false);
+                    
+                    // Show/hide content
+                    d3.selectAll(".tab-content").classed("hidden", true);
+                    const targetTab = d3.select(`#${tabName}-tab`);
+                    
+                    if (targetTab.empty()) {
+                        console.error(`Target tab not found: #${tabName}-tab`);
+                        return;
+                    }
+                    
+                    targetTab.classed("hidden", false);
+                    console.log(`Switched to tab: ${tabName}`);
+                    
+                    // Force re-render visualizations for the active tab if data exists
+                    if (analysisData) {
+                        console.log(`Re-rendering ${tabName} tab with data`);
+                        switch(tabName) {
+                            case 'timeline':
+                                updateTimelineTab(analysisData);
+                                break;
+                            case 'network':
+                                updateNetworkTab(analysisData);
+                                break;
+                            case 'patterns':
+                                updatePatternsTab(analysisData);
+                                break;
+                            case 'evidence':
+                                updateEvidenceTab(analysisData);
+                                break;
+                        }
+                    }
+                });
+                
+                // Marcar que este botón ya tiene listener
+                button.property('__hasTabListener', true);
             }
         });
         
@@ -123,7 +144,11 @@ function init_nadia_analysis() {
     function updateTimelineTab(data) {
         console.log("Updating timeline tab...");
         try {
-            // Create hourly chart immediately - no delays
+            // Clear previous content first
+            d3.select("#hourly-chart").html("");
+            d3.select("#timeline-events").html("");
+            
+            // Create hourly chart
             if (data.communication_patterns && data.communication_patterns.hourly_distribution) {
                 createHourlyChart(data.communication_patterns.hourly_distribution);
             } else {
@@ -145,7 +170,6 @@ function init_nadia_analysis() {
     
     function createHourlyChart(hourlyData) {
         const container = d3.select("#hourly-chart");
-        container.html(""); // Clear previous content
         
         if (!hourlyData || !Array.isArray(hourlyData)) {
             container.html('<p class="text-gray-500">No hourly data available</p>');
@@ -153,9 +177,15 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions immediately
+            // Get container dimensions
             const containerNode = container.node();
-            const width = Math.max(400, containerNode.getBoundingClientRect().width - 20);
+            if (!containerNode) {
+                console.error("Container node not found for hourly chart");
+                return;
+            }
+            
+            const containerRect = containerNode.getBoundingClientRect();
+            const width = Math.max(400, containerRect.width - 20);
             const height = 200;
             const margin = { top: 20, right: 20, bottom: 40, left: 40 };
             
@@ -224,7 +254,6 @@ function init_nadia_analysis() {
     
     function createTimelineEvents(timelineData) {
         const container = d3.select("#timeline-events");
-        container.html("");
         
         if (!timelineData || !Array.isArray(timelineData)) {
             container.html('<p class="text-gray-500">No timeline data available</p>');
@@ -281,6 +310,10 @@ function init_nadia_analysis() {
     function updateNetworkTab(data) {
         console.log("Updating network tab...");
         try {
+            // Clear previous content first
+            d3.select("#network-graph").html("");
+            d3.select("#contacts-list").html("");
+            
             if (data.network_data) {
                 createNetworkGraph(data.network_data);
             } else {
@@ -300,7 +333,6 @@ function init_nadia_analysis() {
     
     function createNetworkGraph(networkData) {
         const container = d3.select("#network-graph");
-        container.html("");
         
         if (!networkData || !networkData.nodes || !networkData.links) {
             container.html('<p class="text-gray-500">No network data available</p>');
@@ -308,9 +340,15 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions immediately
+            // Get container dimensions
             const containerNode = container.node();
-            const width = Math.max(400, containerNode.getBoundingClientRect().width - 20);
+            if (!containerNode) {
+                console.error("Container node not found for network graph");
+                return;
+            }
+            
+            const containerRect = containerNode.getBoundingClientRect();
+            const width = Math.max(400, containerRect.width - 20);
             const height = 350;
             
             const svg = container.append("svg")
@@ -412,7 +450,6 @@ function init_nadia_analysis() {
     
     function createContactsList(topContacts) {
         const container = d3.select("#contacts-list");
-        container.html("");
         
         if (!topContacts || typeof topContacts !== 'object') {
             container.html('<p class="text-gray-500">No contacts data available</p>');
@@ -426,7 +463,7 @@ function init_nadia_analysis() {
             
             contacts.forEach(([contact, count]) => {
                 container.append("div")
-                    .attr("class", "flex justify-between items-center p-2 bg-gray-50 rounded")
+                    .attr("class", "flex justify-between items-center p-2 bg-gray-50 rounded mb-2")
                     .html(`
                         <span class="font-medium text-sm">${contact}</span>
                         <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${count}</span>
@@ -441,6 +478,11 @@ function init_nadia_analysis() {
     function updatePatternsTab(data) {
         console.log("Updating patterns tab...");
         try {
+            // Clear previous content first
+            d3.select("#timing-chart").html("");
+            d3.select("#keyword-chart").html("");
+            d3.select("#authority-analysis").html("");
+            
             if (data.communication_patterns && data.communication_patterns.time_distribution) {
                 createTimingChart(data.communication_patterns.time_distribution);
             } else {
@@ -466,7 +508,6 @@ function init_nadia_analysis() {
     
     function createTimingChart(timeDistribution) {
         const container = d3.select("#timing-chart");
-        container.html("");
         
         if (!timeDistribution || typeof timeDistribution !== 'object') {
             container.html('<p class="text-gray-500">No timing data available</p>');
@@ -474,9 +515,15 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions immediately
+            // Get container dimensions
             const containerNode = container.node();
-            const width = Math.max(250, containerNode.getBoundingClientRect().width - 20);
+            if (!containerNode) {
+                console.error("Container node not found for timing chart");
+                return;
+            }
+            
+            const containerRect = containerNode.getBoundingClientRect();
+            const width = Math.max(250, containerRect.width - 20);
             const height = 180;
             const radius = Math.min(width, height) / 2 - 10;
             
@@ -503,6 +550,11 @@ function init_nadia_analysis() {
                 value
             }));
             
+            if (data.every(d => d.value === 0)) {
+                container.html('<p class="text-gray-500">No timing data to display</p>');
+                return;
+            }
+            
             const arcs = g.selectAll("arc")
                 .data(pie(data))
                 .enter()
@@ -527,7 +579,6 @@ function init_nadia_analysis() {
     
     function createKeywordChart(keywordMentions) {
         const container = d3.select("#keyword-chart");
-        container.html("");
         
         if (!keywordMentions || Object.keys(keywordMentions).length === 0) {
             container.append("div")
@@ -537,9 +588,15 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions immediately
+            // Get container dimensions
             const containerNode = container.node();
-            const width = Math.max(250, containerNode.getBoundingClientRect().width - 20);
+            if (!containerNode) {
+                console.error("Container node not found for keyword chart");
+                return;
+            }
+            
+            const containerRect = containerNode.getBoundingClientRect();
+            const width = Math.max(250, containerRect.width - 20);
             const height = 180;
             const margin = { top: 20, right: 20, bottom: 40, left: 60 };
             
@@ -550,6 +607,11 @@ function init_nadia_analysis() {
             const data = Object.entries(keywordMentions)
                 .slice(0, 8)
                 .map(([keyword, count]) => ({ keyword, count }));
+            
+            if (data.length === 0) {
+                container.html('<p class="text-gray-500">No keywords to display</p>');
+                return;
+            }
             
             const xScale = d3.scaleLinear()
                 .domain([0, d3.max(data, d => d.count) || 1])
@@ -570,9 +632,10 @@ function init_nadia_analysis() {
                 .attr("fill", "#ef4444")
                 .attr("rx", 2);
             
-            svg.selectAll("text")
+            svg.selectAll(".keyword-label")
                 .data(data)
                 .join("text")
+                .attr("class", "keyword-label")
                 .attr("x", margin.left - 5)
                 .attr("y", d => yScale(d.keyword) + yScale.bandwidth() / 2)
                 .attr("dy", "0.35em")
@@ -597,7 +660,6 @@ function init_nadia_analysis() {
     
     function createAuthorityAnalysis(authorityPatterns) {
         const container = d3.select("#authority-analysis");
-        container.html("");
         
         if (!authorityPatterns) {
             container.html('<p class="text-gray-500">No authority patterns data available</p>');
@@ -646,6 +708,10 @@ function init_nadia_analysis() {
     function updateEvidenceTab(data) {
         console.log("Updating evidence tab...");
         try {
+            // Clear previous content first
+            d3.select("#suspicion-indicators").html("");
+            d3.select("#suspicious-messages").html("");
+            
             if (data.suspicion_analysis && data.suspicion_analysis.indicators) {
                 createSuspicionIndicators(data.suspicion_analysis.indicators);
             } else {
@@ -665,7 +731,6 @@ function init_nadia_analysis() {
     
     function createSuspicionIndicators(indicators) {
         const container = d3.select("#suspicion-indicators");
-        container.html("");
         
         if (!indicators || !Array.isArray(indicators) || indicators.length === 0) {
             container.append("div")
@@ -679,7 +744,7 @@ function init_nadia_analysis() {
                 const severityClass = getSeverityClass(indicator.severity || 'low');
                 
                 container.append("div")
-                    .attr("class", `p-4 rounded-lg ${severityClass}`)
+                    .attr("class", `p-4 rounded-lg mb-3 ${severityClass}`)
                     .html(`
                         <div class="flex justify-between items-start mb-2">
                             <span class="font-medium capitalize">${(indicator.type || 'unknown').replace('_', ' ')}</span>
@@ -705,7 +770,6 @@ function init_nadia_analysis() {
     
     function createSuspiciousMessages(suspiciousMessages) {
         const container = d3.select("#suspicious-messages");
-        container.html("");
         
         if (!suspiciousMessages || !Array.isArray(suspiciousMessages) || suspiciousMessages.length === 0) {
             container.append("div")
@@ -717,7 +781,7 @@ function init_nadia_analysis() {
         try {
             suspiciousMessages.slice(0, 10).forEach(message => {
                 const messageDiv = container.append("div")
-                    .attr("class", "border rounded-lg p-3 cursor-pointer hover:bg-gray-50")
+                    .attr("class", "border rounded-lg p-3 cursor-pointer hover:bg-gray-50 mb-3")
                     .on("click", () => showMessageModal(message));
                 
                 messageDiv.append("div")
@@ -738,7 +802,7 @@ function init_nadia_analysis() {
                 if (message.keywords && Array.isArray(message.keywords)) {
                     messageDiv.append("div")
                         .attr("class", "text-xs")
-                        .html(`Keywords: ${message.keywords.map(k => `<span class="bg-red-100 text-red-800 px-1 rounded">${k}</span>`).join(' ')}`);
+                        .html(`Keywords: ${message.keywords.map(k => `<span class="bg-red-100 text-red-800 px-1 rounded mr-1">${k}</span>`).join('')}`);
                 }
             });
         } catch (error) {
@@ -814,12 +878,20 @@ function init_nadia_analysis() {
         }
     }
     
-    // Close modal handlers
-    d3.select("#close-message-modal").on("click", () => {
+    // Close modal handlers - SOLO SE REGISTRAN UNA VEZ
+    const closeModalButton = d3.select("#close-message-modal");
+    const modalOverlay = d3.select("#message-modal");
+    
+    // Remove existing listeners first to avoid duplicates
+    closeModalButton.on("click", null);
+    modalOverlay.on("click", null);
+    
+    // Add new listeners
+    closeModalButton.on("click", () => {
         d3.select("#message-modal").classed("hidden", true);
     });
     
-    d3.select("#message-modal").on("click", function(event) {
+    modalOverlay.on("click", function(event) {
         if (event.target === this) {
             d3.select(this).classed("hidden", true);
         }
