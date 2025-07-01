@@ -162,7 +162,17 @@ def index():
 
     logger.debug(f"Rendering index with visualizations: {[v['name'] for v in viz_list]}")
     return render_template("index.html", visualizations=viz_list)
+@app.route('/network_analysis')
+def network_analysis():
+    return render_template('network_analysis.html')
 
+@app.route('/behavioral_patterns')
+def behavioral_patterns():
+    return render_template('behavioral_patterns.html')
+
+@app.route('/suspicious_evidence')
+def suspicious_evidence():
+    return render_template('suspicious_evidence.html')
 @app.route("/data/<viz_name>", methods=["GET", "POST"])
 def get_data(viz_name):
     logger.debug(f"Data request for: {viz_name}")
