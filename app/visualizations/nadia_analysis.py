@@ -21,6 +21,7 @@ def get_data():
             logger.error("Communication file not configured")
             return {"error": "Communication file not configured"}
         
+        logger.info(f"Loading communication data from: {comm_file}")
         with open(comm_file, "r") as f:
             comm_data = json.load(f)
         
@@ -28,17 +29,28 @@ def get_data():
         nadia_id = "Nadia Conti"
         nadia_communications = []
         
+        # Process all communication links
         for link in comm_data.get("links", []):
             if link.get("source") == nadia_id or link.get("target") == nadia_id:
                 try:
                     datetime_str = link.get("datetime", "2040-01-01T00:00:00")
+                    
                     # Handle different datetime formats
                     if "T" in datetime_str:
-                        comm_datetime = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    else:
+                        # ISO format - remove Z if present
+                        clean_datetime = datetime_str.replace("Z", "")
+                        if "+" in clean_datetime:
+                            clean_datetime = clean_datetime.split("+")[0]
+                        comm_datetime = datetime.fromisoformat(clean_datetime)
+                    elif " " in datetime_str:
+                        # Space separated format
                         comm_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+                    else:
+                        # Date only format
+                        comm_datetime = datetime.strptime(datetime_str, "%Y-%m-%d")
                     
-                    nadia_communications.append({
+                    # Create communication record
+                    comm_record = {
                         "id": link.get("event_id", f"comm_{len(nadia_communications)}"),
                         "datetime": datetime_str,
                         "date": comm_datetime.strftime("%Y-%m-%d"),
@@ -48,11 +60,14 @@ def get_data():
                         "target": link.get("target", ""),
                         "content": link.get("content", ""),
                         "is_sender": link.get("source") == nadia_id
-                    })
+                    }
+                    
+                    nadia_communications.append(comm_record)
+                    
                 except Exception as e:
                     logger.warning(f"Error parsing datetime {link.get('datetime')}: {e}")
                     # Add communication with fallback values
-                    nadia_communications.append({
+                    fallback_record = {
                         "id": link.get("event_id", f"comm_{len(nadia_communications)}"),
                         "datetime": "2040-01-01T00:00:00",
                         "date": "2040-01-01",
@@ -62,7 +77,8 @@ def get_data():
                         "target": link.get("target", ""),
                         "content": link.get("content", ""),
                         "is_sender": link.get("source") == nadia_id
-                    })
+                    }
+                    nadia_communications.append(fallback_record)
                     continue
         
         if not nadia_communications:
@@ -74,7 +90,7 @@ def get_data():
         # Sort by datetime
         nadia_communications.sort(key=lambda x: x["datetime"])
         
-        # Analyze contacts using Counter
+        # Analyze contacts
         contacts = Counter()
         for comm in nadia_communications:
             other_party = comm["target"] if comm["is_sender"] else comm["source"]
@@ -110,7 +126,8 @@ def get_data():
             "arrangement", "deal", "payment", "money", "cash", "funding",
             "restricted", "access", "corridor", "bypass", "loophole",
             "mining", "extraction", "drilling", "equipment", "operation",
-            "illegal", "unauthorized", "bribe", "corruption", "under table"
+            "illegal", "unauthorized", "bribe", "corruption", "under table",
+            "approve", "approval", "license", "certificate", "official"
         ]
         
         keyword_mentions = Counter()
@@ -139,7 +156,7 @@ def get_data():
         permit_related = []
         for comm in nadia_communications:
             content_lower = comm["content"].lower()
-            if any(term in content_lower for term in ["permit", "authorization", "approval", "clearance"]):
+            if any(term in content_lower for term in ["permit", "authorization", "approval", "clearance", "license"]):
                 permit_related.append(comm)
         
         # Create network data
@@ -154,7 +171,7 @@ def get_data():
         network_links = []
         
         # Add top contacts as nodes
-        for contact, count in contacts.most_common(15):  # Top 15 contacts
+        for contact, count in contacts.most_common(15):
             if contact:
                 network_nodes.append({
                     "id": contact,
@@ -178,9 +195,9 @@ def get_data():
             
             # Determine event type based on content
             content_lower = comm["content"].lower()
-            if any(keyword in content_lower for keyword in ["secret", "private", "illegal", "bribe", "unauthorized"]):
+            if any(keyword in content_lower for keyword in ["secret", "private", "illegal", "bribe", "unauthorized", "corruption"]):
                 event_type = "suspicious"
-            elif any(term in content_lower for term in ["permit", "authorization", "approval", "clearance"]):
+            elif any(term in content_lower for term in ["permit", "authorization", "approval", "clearance", "license"]):
                 event_type = "permit_related"
             
             timeline_events.append({
@@ -200,20 +217,24 @@ def get_data():
         suspicion_indicators = []
         
         # Check for unusual timing patterns
-        if time_patterns["late_night"] > len(nadia_communications) * 0.15:  # More than 15%
+        total_comms = len(nadia_communications)
+        late_night_percent = time_patterns["late_night"] / total_comms if total_comms > 0 else 0
+        
+        if late_night_percent > 0.15:  # More than 15%
             suspicion_indicators.append({
                 "type": "timing",
-                "description": f"Unusually high number of late-night communications ({time_patterns['late_night']} out of {len(nadia_communications)} total)",
+                "description": f"Unusually high number of late-night communications ({time_patterns['late_night']} out of {total_comms} total, {late_night_percent:.1%})",
                 "severity": "medium"
             })
         
         # Check for suspicious keywords
         if len(keyword_mentions) > 0:
+            total_keyword_count = sum(keyword_mentions.values())
             top_keywords = list(keyword_mentions.keys())[:5]
             suspicion_indicators.append({
                 "type": "content",
-                "description": f"Multiple suspicious keywords detected: {', '.join(top_keywords)}",
-                "severity": "high" if len(keyword_mentions) > 3 else "medium"
+                "description": f"Multiple suspicious keywords detected ({total_keyword_count} mentions): {', '.join(top_keywords)}",
+                "severity": "high" if len(keyword_mentions) > 5 else "medium"
             })
         
         # Check for permit-related activity
@@ -226,11 +247,19 @@ def get_data():
         
         # Check for concentrated communication patterns
         high_contact_entities = [contact for contact, count in contacts.items() if count > 5]
-        if len(high_contact_entities) > 0:
+        if len(high_contact_entities) > 2:
             suspicion_indicators.append({
                 "type": "network",
                 "description": f"Frequent communication with specific entities: {', '.join(high_contact_entities[:3])}",
                 "severity": "medium"
+            })
+        
+        # Check for suspicious message content
+        if len(suspicious_messages) > 5:
+            suspicion_indicators.append({
+                "type": "content_analysis",
+                "description": f"High number of messages containing suspicious keywords ({len(suspicious_messages)} messages)",
+                "severity": "high"
             })
         
         # Determine overall recommendation
@@ -260,7 +289,7 @@ def get_data():
                 "suspicious_messages_count": len(suspicious_messages)
             },
             "keyword_analysis": {
-                "keyword_mentions": dict(keyword_mentions.most_common(10)),
+                "keyword_mentions": dict(keyword_mentions.most_common(15)),
                 "suspicious_messages": suspicious_messages[:20]  # Top 20 most suspicious
             },
             "authority_patterns": {
@@ -280,8 +309,16 @@ def get_data():
         }
         
         logger.info(f"Generated analysis with {len(suspicion_indicators)} indicators, recommendation: {recommendation}")
+        logger.info(f"Analysis summary: {len(nadia_communications)} communications, {len(contacts)} contacts, {len(keyword_mentions)} suspicious keywords")
+        
         return response_data
         
+    except FileNotFoundError as e:
+        logger.error(f"File not found in nadia_analysis: {str(e)}")
+        return {"error": f"Data file not found: {str(e)}"}
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in nadia_analysis: {str(e)}")
+        return {"error": f"Invalid JSON in data file: {str(e)}"}
     except Exception as e:
-        logger.error(f"Error in nadia_analysis: {str(e)}", exc_info=True)
+        logger.error(f"Unexpected error in nadia_analysis: {str(e)}", exc_info=True)
         return {"error": f"Analysis error: {str(e)}"}

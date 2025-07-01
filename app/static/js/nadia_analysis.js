@@ -4,7 +4,10 @@ function init_nadia_analysis() {
     
     let analysisData = null;
     
-    // Initialize tab switching FIRST
+    // Clear any existing content first
+    d3.select("#executive-summary").html('<div class="text-center py-4">Loading analysis...</div>');
+    
+    // Initialize tab switching
     initTabSwitching();
     
     // Load data from Flask endpoint
@@ -21,12 +24,8 @@ function init_nadia_analysis() {
             // Update executive summary
             updateExecutiveSummary(data);
             
-            // Initialize all visualizations immediately
-            updateTimelineTab(data);
-            updateNetworkTab(data);
-            updatePatternsTab(data);
-            updateEvidenceTab(data);
-            updateConclusion(data);
+            // Initialize all visualizations
+            updateAllTabs(data);
         })
         .catch(error => {
             console.error("Error loading Nadia analysis data:", error);
@@ -45,69 +44,49 @@ function init_nadia_analysis() {
     function initTabSwitching() {
         console.log("Initializing tab switching...");
         
-        // Add new event listeners SOLO SI NO EXISTEN YA
-        d3.selectAll(".analysis-tab").each(function() {
-            const button = d3.select(this);
-            const hasListener = button.property('__hasTabListener');
+        // Remove any existing event listeners
+        d3.selectAll(".analysis-tab").on("click", null);
+        
+        // Add new event listeners
+        d3.selectAll(".analysis-tab").on("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
             
-            if (!hasListener) {
-                button.on("click", function(event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    
-                    const tabName = d3.select(this).attr("data-tab");
-                    console.log(`Tab clicked: ${tabName}`);
-                    
-                    if (!tabName) {
-                        console.error("No data-tab attribute found");
-                        return;
-                    }
-                    
-                    // Update tab appearance
-                    d3.selectAll(".analysis-tab")
-                        .classed("active", false)
-                        .classed("border-blue-500 text-blue-600", false)
-                        .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", true);
-                    
-                    d3.select(this)
-                        .classed("active", true)
-                        .classed("border-blue-500 text-blue-600", true)
-                        .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", false);
-                    
-                    // Show/hide content
-                    d3.selectAll(".tab-content").classed("hidden", true);
-                    const targetTab = d3.select(`#${tabName}-tab`);
-                    
-                    if (targetTab.empty()) {
-                        console.error(`Target tab not found: #${tabName}-tab`);
-                        return;
-                    }
-                    
-                    targetTab.classed("hidden", false);
-                    console.log(`Switched to tab: ${tabName}`);
-                    
-                    // Force re-render visualizations for the active tab if data exists
-                    if (analysisData) {
-                        console.log(`Re-rendering ${tabName} tab with data`);
-                        switch(tabName) {
-                            case 'timeline':
-                                updateTimelineTab(analysisData);
-                                break;
-                            case 'network':
-                                updateNetworkTab(analysisData);
-                                break;
-                            case 'patterns':
-                                updatePatternsTab(analysisData);
-                                break;
-                            case 'evidence':
-                                updateEvidenceTab(analysisData);
-                                break;
-                        }
-                    }
-                });
-                
-                // Marcar que este botón ya tiene listener
-                button.property('__hasTabListener', true);
+            const tabName = d3.select(this).attr("data-tab");
+            console.log(`Tab clicked: ${tabName}`);
+            
+            if (!tabName) {
+                console.error("No data-tab attribute found");
+                return;
+            }
+            
+            // Update tab appearance
+            d3.selectAll(".analysis-tab")
+                .classed("active", false)
+                .classed("border-blue-500 text-blue-600", false)
+                .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", true);
+            
+            d3.select(this)
+                .classed("active", true)
+                .classed("border-blue-500 text-blue-600", true)
+                .classed("border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300", false);
+            
+            // Show/hide content
+            d3.selectAll(".tab-content").classed("hidden", true);
+            const targetTab = d3.select(`#${tabName}-tab`);
+            
+            if (targetTab.empty()) {
+                console.error(`Target tab not found: #${tabName}-tab`);
+                return;
+            }
+            
+            targetTab.classed("hidden", false);
+            console.log(`Switched to tab: ${tabName}`);
+            
+            // Re-render visualization for the active tab if data exists
+            if (analysisData) {
+                console.log(`Re-rendering ${tabName} tab with data`);
+                renderTabContent(tabName, analysisData);
             }
         });
         
@@ -141,10 +120,36 @@ function init_nadia_analysis() {
         }
     }
     
+    function updateAllTabs(data) {
+        // Initialize all tabs with data
+        updateTimelineTab(data);
+        updateNetworkTab(data);
+        updatePatternsTab(data);
+        updateEvidenceTab(data);
+        updateConclusion(data);
+    }
+    
+    function renderTabContent(tabName, data) {
+        switch(tabName) {
+            case 'timeline':
+                updateTimelineTab(data);
+                break;
+            case 'network':
+                updateNetworkTab(data);
+                break;
+            case 'patterns':
+                updatePatternsTab(data);
+                break;
+            case 'evidence':
+                updateEvidenceTab(data);
+                break;
+        }
+    }
+    
     function updateTimelineTab(data) {
         console.log("Updating timeline tab...");
         try {
-            // Clear previous content first
+            // Clear previous content
             d3.select("#hourly-chart").html("");
             d3.select("#timeline-events").html("");
             
@@ -177,7 +182,6 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions
             const containerNode = container.node();
             if (!containerNode) {
                 console.error("Container node not found for hourly chart");
@@ -216,7 +220,6 @@ function init_nadia_analysis() {
                 .attr("width", xScale.bandwidth())
                 .attr("height", d => yScale(0) - yScale(d.count))
                 .attr("fill", d => {
-                    // Color code suspicious hours
                     if (d.hour >= 23 || d.hour <= 4) return "#ef4444"; // Late night - red
                     if (d.hour >= 5 && d.hour <= 7) return "#f59e0b"; // Early morning - yellow
                     return "#3b82f6"; // Normal hours - blue
@@ -261,11 +264,13 @@ function init_nadia_analysis() {
         }
         
         try {
+            container.selectAll("*").remove();
+            
             const events = container.selectAll(".timeline-event")
-                .data(timelineData.slice(0, 20)) // Show first 20 events
+                .data(timelineData.slice(0, 20))
                 .enter()
                 .append("div")
-                .attr("class", "timeline-event p-3 border rounded-lg cursor-pointer hover:bg-gray-50")
+                .attr("class", "timeline-event p-3 border rounded-lg cursor-pointer hover:bg-gray-50 mb-2")
                 .style("border-color", d => {
                     if (d.event_type === "suspicious") return "#ef4444";
                     if (d.event_type === "permit_related") return "#f59e0b";
@@ -310,7 +315,6 @@ function init_nadia_analysis() {
     function updateNetworkTab(data) {
         console.log("Updating network tab...");
         try {
-            // Clear previous content first
             d3.select("#network-graph").html("");
             d3.select("#contacts-list").html("");
             
@@ -319,6 +323,7 @@ function init_nadia_analysis() {
             } else {
                 d3.select("#network-graph").html('<p class="text-gray-500">No network data available</p>');
             }
+            
             if (data.nadia_profile && data.nadia_profile.top_contacts) {
                 createContactsList(data.nadia_profile.top_contacts);
             } else {
@@ -340,7 +345,6 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions
             const containerNode = container.node();
             if (!containerNode) {
                 console.error("Container node not found for network graph");
@@ -457,6 +461,8 @@ function init_nadia_analysis() {
         }
         
         try {
+            container.selectAll("*").remove();
+            
             const contacts = Object.entries(topContacts)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 10);
@@ -478,7 +484,6 @@ function init_nadia_analysis() {
     function updatePatternsTab(data) {
         console.log("Updating patterns tab...");
         try {
-            // Clear previous content first
             d3.select("#timing-chart").html("");
             d3.select("#keyword-chart").html("");
             d3.select("#authority-analysis").html("");
@@ -488,11 +493,13 @@ function init_nadia_analysis() {
             } else {
                 d3.select("#timing-chart").html('<p class="text-gray-500">No timing data available</p>');
             }
+            
             if (data.keyword_analysis && data.keyword_analysis.keyword_mentions) {
                 createKeywordChart(data.keyword_analysis.keyword_mentions);
             } else {
                 d3.select("#keyword-chart").html('<p class="text-gray-500">No keyword data available</p>');
             }
+            
             if (data.authority_patterns) {
                 createAuthorityAnalysis(data.authority_patterns);
             } else {
@@ -515,7 +522,6 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions
             const containerNode = container.node();
             if (!containerNode) {
                 console.error("Container node not found for timing chart");
@@ -588,7 +594,6 @@ function init_nadia_analysis() {
         }
         
         try {
-            // Get container dimensions
             const containerNode = container.node();
             if (!containerNode) {
                 console.error("Container node not found for keyword chart");
@@ -667,6 +672,8 @@ function init_nadia_analysis() {
         }
         
         try {
+            container.selectAll("*").remove();
+            
             const permitCount = (authorityPatterns.permit_related || []).length;
             const authorityCount = (authorityPatterns.authority_abuse_indicators || []).length;
             
@@ -708,7 +715,6 @@ function init_nadia_analysis() {
     function updateEvidenceTab(data) {
         console.log("Updating evidence tab...");
         try {
-            // Clear previous content first
             d3.select("#suspicion-indicators").html("");
             d3.select("#suspicious-messages").html("");
             
@@ -717,6 +723,7 @@ function init_nadia_analysis() {
             } else {
                 d3.select("#suspicion-indicators").html('<p class="text-gray-500">No suspicion indicators available</p>');
             }
+            
             if (data.keyword_analysis && data.keyword_analysis.suspicious_messages) {
                 createSuspiciousMessages(data.keyword_analysis.suspicious_messages);
             } else {
@@ -740,6 +747,8 @@ function init_nadia_analysis() {
         }
         
         try {
+            container.selectAll("*").remove();
+            
             indicators.forEach(indicator => {
                 const severityClass = getSeverityClass(indicator.severity || 'low');
                 
@@ -779,6 +788,8 @@ function init_nadia_analysis() {
         }
         
         try {
+            container.selectAll("*").remove();
+            
             suspiciousMessages.slice(0, 10).forEach(message => {
                 const messageDiv = container.append("div")
                     .attr("class", "border rounded-lg p-3 cursor-pointer hover:bg-gray-50 mb-3")
@@ -878,24 +889,29 @@ function init_nadia_analysis() {
         }
     }
     
-    // Close modal handlers - SOLO SE REGISTRAN UNA VEZ
-    const closeModalButton = d3.select("#close-message-modal");
-    const modalOverlay = d3.select("#message-modal");
+    // Modal event handlers - only set up once
+    function setupModalHandlers() {
+        const closeModalButton = d3.select("#close-message-modal");
+        const modalOverlay = d3.select("#message-modal");
+        
+        // Remove existing listeners first
+        closeModalButton.on("click", null);
+        modalOverlay.on("click", null);
+        
+        // Add new listeners
+        closeModalButton.on("click", () => {
+            d3.select("#message-modal").classed("hidden", true);
+        });
+        
+        modalOverlay.on("click", function(event) {
+            if (event.target === this) {
+                d3.select(this).classed("hidden", true);
+            }
+        });
+    }
     
-    // Remove existing listeners first to avoid duplicates
-    closeModalButton.on("click", null);
-    modalOverlay.on("click", null);
-    
-    // Add new listeners
-    closeModalButton.on("click", () => {
-        d3.select("#message-modal").classed("hidden", true);
-    });
-    
-    modalOverlay.on("click", function(event) {
-        if (event.target === this) {
-            d3.select(this).classed("hidden", true);
-        }
-    });
+    // Set up modal handlers once
+    setupModalHandlers();
 }
 
 // Export the init function
